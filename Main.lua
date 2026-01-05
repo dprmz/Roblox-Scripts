@@ -131,17 +131,58 @@ dot.Visible = false
 
 CrBtn.MouseButton1Click:Connect(function() dot.Visible = not dot.Visible end)
 
--- --- 5. FITUR PERFECT SKILLCHECK ---
+-- --- 5. FITUR PERFECT SKILLCHECK (AUTO SPACE) ---
 local ScBtn = Instance.new("TextButton", MainFrame)
-ScBtn.Text = "Auto Skillcheck (Active)"
+ScBtn.Text = "Auto Skillcheck: OFF"
 ScBtn.Size = UDim2.new(0.8, 0, 0, 35)
 ScBtn.Position = UDim2.new(0.1, 0, 0, 230)
-ScBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 100)
+ScBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0) -- Merah (OFF)
 ScBtn.TextColor3 = Color3.new(1, 1, 1)
 
--- Notifikasi Akhir
-game.StarterGui:SetCore("SendNotification", {
-    Title = "ADI MENU";
-    Text = "Press L-CTRL to Hide/Show";
-    Duration = 5;
-})
+local autoSkillEnabled = false
+
+-- Fungsi utama deteksi Bar
+local function startSkillCheckBot()
+    RunService.RenderStepped:Connect(function()
+        if not autoSkillEnabled then return end
+        
+        local playerGui = lp:WaitForChild("PlayerGui")
+        
+        -- Mencari UI Skillcheck (Coba deteksi nama umum di game)
+        -- Kamu bisa ganti "SkillCheck" dengan nama folder UI di game tersebut
+        local gui = playerGui:FindFirstChild("SkillCheck") or playerGui:FindFirstChild("ActionUI")
+        
+        if gui and gui.Visible then
+            local bar = gui:FindFirstChild("Bar") -- Garis yang bergerak
+            local zone = gui:FindFirstChild("PerfectZone") or gui:FindFirstChild("SuccessZone") -- Target
+            
+            if bar and zone then
+                -- Logika matematika: Jika posisi Bar berada di dalam posisi Zone
+                local barPos = bar.AbsolutePosition.X
+                local zoneStart = zone.AbsolutePosition.X
+                local zoneEnd = zone.AbsolutePosition.X + zone.AbsoluteSize.X
+                
+                if barPos >= zoneStart and barPos <= zoneEnd then
+                    -- Simulasi tekan Space Bar menggunakan VirtualUser (agar tidak terdeteksi)
+                    local vim = game:GetService("VirtualInputManager")
+                    vim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                    task.wait(0.05)
+                    vim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                    print("[ ADI ] Perfect Skillcheck Success!")
+                end
+            end
+        end
+    end)
+end
+
+ScBtn.MouseButton1Click:Connect(function()
+    autoSkillEnabled = not autoSkillEnabled
+    if autoSkillEnabled then
+        ScBtn.Text = "Auto Skillcheck: ON"
+        ScBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0) -- Hijau (ON)
+        startSkillCheckBot()
+    else
+        ScBtn.Text = "Auto Skillcheck: OFF"
+        ScBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    end
+end)
