@@ -1,100 +1,147 @@
--- [[ ADI PROJECT - MAIN SCRIPT V2 ]] --
+-- [[ ADI PROJECT - MAIN SCRIPT V3 ]] --
+
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local players = game:GetService("Players")
+local lp = players.LocalPlayer
 
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
-local SpeedInput = Instance.new("TextBox")
-local WallhackBtn = Instance.new("TextButton")
-local SkillcheckBtn = Instance.new("TextButton")
-local CrosshairBtn = Instance.new("TextButton")
 
--- Setup GUI
-ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+-- GUI Setup
+ScreenGui.Parent = lp:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
+ScreenGui.Name = "AdiMenuGui"
 
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.Position = UDim2.new(0.5, -110, 0.5, -100)
-MainFrame.Size = UDim2.new(0, 220, 0, 250)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -150)
+MainFrame.Size = UDim2.new(0, 250, 0, 320)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
 Title.Parent = MainFrame
-Title.Text = "ADI MENU PRO"
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+Title.Text = "ADI MENU PRO V3"
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 18
 
--- 1. FITUR WALLHACK (ESP)
-WallhackBtn.Parent = MainFrame
-WallhackBtn.Text = "Enable Wallhack"
-WallhackBtn.Position = UDim2.new(0.1, 0, 0.15, 0)
-WallhackBtn.Size = UDim2.new(0.8, 0, 0, 30)
-WallhackBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 150)
+-- --- 1. FITUR HIDE/SHOW (CTRL) ---
+local isVisible = true
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.LeftControl then
+        isVisible = not isVisible
+        MainFrame.Visible = isVisible
+    end
+end)
 
-WallhackBtn.MouseButton1Click:Connect(function()
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= game.Players.LocalPlayer and player.Character then
-            local highlight = Instance.new("Highlight")
-            highlight.Parent = player.Character
-            highlight.FillColor = Color3.fromRGB(255, 0, 0)
-            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+-- --- 2. FITUR ADJUST SPEED (SLIDER + TYPING) ---
+local SpeedLabel = Instance.new("TextLabel", MainFrame)
+SpeedLabel.Text = "WalkSpeed: 16"
+SpeedLabel.Size = UDim2.new(1, 0, 0, 20)
+SpeedLabel.Position = UDim2.new(0, 0, 0, 50)
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.TextColor3 = Color3.new(1, 1, 1)
+
+-- Slider Background
+local SliderBg = Instance.new("Frame", MainFrame)
+SliderBg.Size = UDim2.new(0.8, 0, 0, 10)
+SliderBg.Position = UDim2.new(0.1, 0, 0, 75)
+SliderBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+
+-- Slider Button (The Knob)
+local SliderBtn = Instance.new("TextButton", SliderBg)
+SliderBtn.Size = UDim2.new(0, 15, 1.5, 0)
+SliderBtn.Position = UDim2.new(0, 0, -0.25, 0)
+SliderBtn.Text = ""
+SliderBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+
+-- Textbox for Typing
+local SpeedInput = Instance.new("TextBox", MainFrame)
+SpeedInput.Size = UDim2.new(0.4, 0, 0, 25)
+SpeedInput.Position = UDim2.new(0.3, 0, 0, 95)
+SpeedInput.PlaceholderText = "Type Speed"
+SpeedInput.Text = "16"
+
+local function setSpeed(value)
+    local val = math.clamp(tonumber(value) or 16, 16, 250)
+    if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+        lp.Character.Humanoid.WalkSpeed = val
+        SpeedLabel.Text = "WalkSpeed: " .. math.floor(val)
+        SpeedInput.Text = math.floor(val)
+    end
+end
+
+-- Slider Logic
+local dragging = false
+SliderBtn.MouseButton1Down:Connect(function() dragging = true end)
+UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+
+RunService.RenderStepped:Connect(function()
+    if dragging then
+        local mousePos = UserInputService:GetMouseLocation().X
+        local sliderPos = SliderBg.AbsolutePosition.X
+        local sliderWidth = SliderBg.AbsoluteSize.X
+        local percent = math.clamp((mousePos - sliderPos) / sliderWidth, 0, 1)
+        SliderBtn.Position = UDim2.new(percent, -7, -0.25, 0)
+        setSpeed(16 + (percent * 234)) -- Min 16, Max 250
+    end
+end)
+
+SpeedInput.FocusLost:Connect(function()
+    setSpeed(SpeedInput.Text)
+end)
+
+-- --- 3. FITUR WALLHACK (TOGGLE) ---
+local WhBtn = Instance.new("TextButton", MainFrame)
+WhBtn.Text = "Wallhack (ESP)"
+WhBtn.Size = UDim2.new(0.8, 0, 0, 35)
+WhBtn.Position = UDim2.new(0.1, 0, 0, 140)
+WhBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 150)
+WhBtn.TextColor3 = Color3.new(1, 1, 1)
+
+WhBtn.MouseButton1Click:Connect(function()
+    for _, p in pairs(players:GetPlayers()) do
+        if p ~= lp and p.Character then
+            local hl = p.Character:FindFirstChild("AdiESP") or Instance.new("Highlight", p.Character)
+            hl.Name = "AdiESP"
+            hl.FillColor = Color3.new(1, 0, 0)
+            hl.Enabled = true
         end
     end
 end)
 
--- 2. FITUR SKILLCHECK (Violence District / DBD)
-SkillcheckBtn.Parent = MainFrame
-SkillcheckBtn.Text = "Auto Perfect Skillcheck"
-SkillcheckBtn.Position = UDim2.new(0.1, 0, 0.30, 0)
-SkillcheckBtn.Size = UDim2.new(0.8, 0, 0, 30)
-SkillcheckBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 120)
+-- --- 4. FITUR CROSSHAIR ---
+local CrBtn = Instance.new("TextButton", MainFrame)
+CrBtn.Text = "Toggle Crosshair"
+CrBtn.Size = UDim2.new(0.8, 0, 0, 35)
+CrBtn.Position = UDim2.new(0.1, 0, 0, 185)
+CrBtn.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
+CrBtn.TextColor3 = Color3.new(1, 1, 1)
 
-SkillcheckBtn.MouseButton1Click:Connect(function()
-    -- Logika untuk mencari UI Skillcheck di game
-    -- Catatan: Nama UI harus sesuai dengan yang ada di game target
-    game:GetService("RunService").RenderStepped:Connect(function()
-        local pGui = game.Players.LocalPlayer.PlayerGui
-        -- Contoh deteksi untuk game tipe DBD/Violence District
-        local success, err = pcall(function()
-            if pGui:FindFirstChild("SkillCheck") or pGui:FindFirstChild("ActionUI") then
-                -- Logika otomatis menekan (FireServer/VirtualInput)
-                -- Di sini kamu perlu tahu event remote game-nya
-                print("Skillcheck Terdeteksi!")
-            end
-        end)
-    end)
-end)
+local dot = Instance.new("Frame", ScreenGui)
+dot.Size = UDim2.new(0, 4, 0, 4)
+dot.Position = UDim2.new(0.5, -2, 0.5, -2)
+dot.BackgroundColor3 = Color3.new(1, 0, 0)
+dot.Visible = false
 
--- 3. FITUR ADJUST SPEED (Bisa Diatur)
-SpeedInput.Parent = MainFrame
-SpeedInput.PlaceholderText = "Set Speed (ex: 50)"
-SpeedInput.Text = ""
-SpeedInput.Position = UDim2.new(0.1, 0, 0.45, 0)
-SpeedInput.Size = UDim2.new(0.8, 0, 0, 30)
+CrBtn.MouseButton1Click:Connect(function() dot.Visible = not dot.Visible end)
 
-SpeedInput.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        local speed = tonumber(SpeedInput.Text)
-        if speed then
-            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = speed
-        end
-    end
-end)
+-- --- 5. FITUR PERFECT SKILLCHECK ---
+local ScBtn = Instance.new("TextButton", MainFrame)
+ScBtn.Text = "Auto Skillcheck (Active)"
+ScBtn.Size = UDim2.new(0.8, 0, 0, 35)
+ScBtn.Position = UDim2.new(0.1, 0, 0, 230)
+ScBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 100)
+ScBtn.TextColor3 = Color3.new(1, 1, 1)
 
--- 4. FITUR CROSSHAIR (Titik Tengah)
-CrosshairBtn.Parent = MainFrame
-CrosshairBtn.Text = "Toggle Crosshair"
-CrosshairBtn.Position = UDim2.new(0.1, 0, 0.60, 0)
-CrosshairBtn.Size = UDim2.new(0.8, 0, 0, 30)
-CrosshairBtn.BackgroundColor3 = Color3.fromRGB(200, 150, 0)
-
-local ch = Instance.new("Frame", ScreenGui)
-ch.Size = UDim2.new(0, 5, 0, 5)
-ch.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-ch.Position = UDim2.new(0.5, -2, 0.5, -2)
-ch.Visible = false
-
-CrosshairBtn.MouseButton1Click:Connect(function()
-    ch.Visible = not ch.Visible
-end)
+-- Notifikasi Akhir
+game.StarterGui:SetCore("SendNotification", {
+    Title = "ADI MENU";
+    Text = "Press L-CTRL to Hide/Show";
+    Duration = 5;
+})
