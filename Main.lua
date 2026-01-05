@@ -1,42 +1,45 @@
--- [[ ADI PROJECT - V17 FINAL FIX ALL-IN-ONE ]] --
+-- [[ ADI PROJECT - V18 OVERLAY & MOUSE FIX ]] --
 
--- 1. DEEP LOADING GUARD (Mencegah Black Screen)
+-- 1. ANTI-BLACK SCREEN & LOADING GUARD
 if not game:IsLoaded() then game.Loaded:Wait() end
 local lp = game:GetService("Players").LocalPlayer
-local pGui = lp:WaitForChild("PlayerGui")
-
--- Menunggu hingga layar loading bawaan game benar-benar hilang
-local function waitSafe()
-    local checkTime = 0
-    repeat 
-        task.wait(1) 
-        checkTime = checkTime + 1
-    until checkTime > 5 -- Jeda minimal 5 detik
-end
-waitSafe()
+task.wait(5) -- Jeda stabilisasi engine
 
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- 2. SETUP GUI UTAMA (Floating & Draggable)
+-- 2. SETUP GUI DENGAN PRIORITAS TERTINGGI (CoreGui & DisplayOrder)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AdiUltimateV17"
-ScreenGui.Parent = pGui
+ScreenGui.Name = "AdiUltimate_Overlay"
 ScreenGui.ResetOnSpawn = false
+-- DisplayOrder 2147483647 adalah nilai tertinggi agar di atas menu ESC
+ScreenGui.DisplayOrder = 2147483647 
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
+-- Mencoba menaruh GUI di CoreGui agar tetap muncul saat menu ESC dibuka
+pcall(function()
+    if gethui then
+        ScreenGui.Parent = gethui()
+    elseif game:GetService("CoreGui"):FindFirstChild("RobloxGui") then
+        ScreenGui.Parent = game:GetService("CoreGui")
+    else
+        ScreenGui.Parent = lp:WaitForChild("PlayerGui")
+    end
+end)
+
+-- 3. FRAME UTAMA (Floating & Draggable)
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.Position = UDim2.new(0.5, -125, 0.5, -200)
 MainFrame.Size = UDim2.new(0, 260, 0, 460)
 MainFrame.Active = true
-MainFrame.Draggable = true
+MainFrame.Draggable = true -- Membuat GUI bisa digeser (Floating)
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Text = "ADI MENU PRO V17"
+Title.Text = "ADI MENU PRO V18"
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Title.TextColor3 = Color3.new(1, 1, 1)
@@ -44,12 +47,21 @@ Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 18
 Instance.new("UICorner", Title)
 
--- --- [MOUSE UNLOCKER LOGIC] ---
+-- --- [MOUSE & OVERLAY FIX LOGIC] ---
 local menuOpen = true
+
+-- Fungsi Paksa Kursor Muncul dan Bisa Digerakkan
+local function UpdateMouse()
+    if menuOpen then
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        UserInputService.MouseIconEnabled = true
+    end
+end
+
+-- RenderStepped memastikan kursor tidak dipaksa ke tengah oleh game (Camera Lock)
 RunService.RenderStepped:Connect(function()
     if menuOpen and MainFrame.Visible then
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-        UserInputService.MouseIconEnabled = true
     end
 end)
 
@@ -57,6 +69,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
     if not gp and input.KeyCode == Enum.KeyCode.LeftControl then
         menuOpen = not menuOpen
         MainFrame.Visible = menuOpen
+        UpdateMouse()
     end
 end)
 
@@ -120,7 +133,7 @@ local VisBtn = createBtn("Visual Hitbox: OFF", 265, Color3.fromRGB(140, 0, 0))
 local CrBtn = createBtn("Toggle Crosshair", 305, Color3.fromRGB(50, 50, 50))
 local ScBtn = createBtn("Auto Skillcheck: OFF", 345, Color3.fromRGB(140, 0, 0))
 
--- --- [LOGIKA AUTO SKILLCHECK (FIXED BERDASARKAN GAMBAR)] ---
+-- --- [LOGIKA AUTO SKILLCHECK (FIXED)] ---
 local autoSkill = false
 ScBtn.MouseButton1Click:Connect(function()
     autoSkill = not autoSkill
@@ -130,24 +143,18 @@ end)
 
 RunService.Heartbeat:Connect(function()
     if not autoSkill then return end
-    -- Mencari GUI Skillcheck
-    local sg = pGui:FindFirstChild("SkillCheck") or pGui:FindFirstChild("ActionUI") or pGui:FindFirstChild("TugOfWar")
+    local sg = lp.PlayerGui:FindFirstChild("SkillCheck") or lp.PlayerGui:FindFirstChild("ActionUI") or lp.PlayerGui:FindFirstChild("TugOfWar")
     if sg and sg.Enabled then
         local pointer, target = nil, nil
-        -- Scan objek di dalam GUI untuk mencari Merah (Jarum) dan Putih (Target)
         for _, v in pairs(sg:GetDescendants()) do
             if v:IsA("GuiObject") and v.Visible then
-                -- Mencari jarum (merah)
                 if v.BackgroundColor3 == Color3.new(1, 0, 0) or (v:IsA("ImageLabel") and v.ImageColor3 == Color3.new(1, 0, 0)) then
                     pointer = v
-                end
-                -- Mencari target (putih/perfect)
-                if v.Name:lower():find("perfect") or v.BackgroundColor3 == Color3.new(1, 1, 1) then
+                elseif v.Name:lower():find("perfect") or v.BackgroundColor3 == Color3.new(1, 1, 1) then
                     target = v
                 end
             end
         end
-        -- Cek Tabrakan/Overlap Jarum ke Target
         if pointer and target then
             local pP = pointer.AbsolutePosition.X
             local tP = target.AbsolutePosition.X
@@ -156,7 +163,7 @@ RunService.Heartbeat:Connect(function()
                 VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
                 task.wait(0.01)
                 VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-                task.wait(0.4) -- Delay pencegahan double hit
+                task.wait(0.4)
             end
         end
     end
@@ -201,9 +208,4 @@ GenBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Crosshair (Dot)
-local dot = Instance.new("Frame", ScreenGui)
-dot.Size = UDim2.new(0, 4, 0, 4); dot.Position = UDim2.new(0.5, -2, 0.5, -2); dot.BackgroundColor3 = Color3.new(1,0,0); dot.Visible = false; Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
-CrBtn.MouseButton1Click:Connect(function() dot.Visible = not dot.Visible end)
-
-print("ADI MENU V17 LOADED SUCCESSFULLY")
+print("ADI MENU V18 OVERLAY LOADED")
