@@ -161,9 +161,11 @@ WhBtn.MouseButton1Click:Connect(function()
         end
     end
 end)
--- --- 4. FITUR KILLER HITBOX (EXPAND) ---
+)
+
+-- --- 4. FITUR KILLER HITBOX (LOGIC ONLY) ---
 local HitboxLabel = Instance.new("TextLabel", MainFrame)
-HitboxLabel.Text = "Killer Hitbox: 2 (Default)"
+HitboxLabel.Text = "Hitbox Extender: 2 (Default)"
 HitboxLabel.Size = UDim2.new(1, 0, 0, 20)
 HitboxLabel.Position = UDim2.new(0, 0, 0, 275)
 HitboxLabel.BackgroundTransparency = 1
@@ -172,25 +174,76 @@ HitboxLabel.TextColor3 = Color3.new(1, 1, 1)
 local HitboxInput = Instance.new("TextBox", MainFrame)
 HitboxInput.Size = UDim2.new(0.8, 0, 0, 25)
 HitboxInput.Position = UDim2.new(0.1, 0, 0, 295)
-HitboxInput.PlaceholderText = "Set Hitbox (ex: 10)"
+HitboxInput.PlaceholderText = "Set Size (ex: 15)"
 HitboxInput.Text = "2"
+HitboxInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+HitboxInput.TextColor3 = Color3.new(1, 1, 1)
 
-local function setHitbox(size)
+-- Fungsi Extend Hitbox (Hanya Logika Ukuran)
+local function extendHitbox(size)
     local s = tonumber(size) or 2
     for _, p in pairs(game.Players:GetPlayers()) do
         if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            p.Character.HumanoidRootPart.Size = Vector3.new(s, s, s)
+            p.Character.HumanoidRootPart.CanCollide = false
+        end
+    end
+    HitboxLabel.Text = "Hitbox Extender: " .. s .. " (" .. math.floor((s/2)*100) .. "%)"
+end
+
+HitboxInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed then extendHitbox(HitboxInput.Text) end
+end)
+
+-- --- 4B. FITUR VISUAL HITBOX (LINE ONLY) ---
+local VisualBtn = Instance.new("TextButton", MainFrame)
+VisualBtn.Text = "Visual Hitbox: OFF"
+VisualBtn.Size = UDim2.new(0.8, 0, 0, 30)
+VisualBtn.Position = UDim2.new(0.1, 0, 0, 325)
+VisualBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+VisualBtn.TextColor3 = Color3.new(1, 1, 1)
+
+local visualEnabled = false
+
+-- Fungsi membuat kotak garis (SelectionBox)
+local function updateVisuals()
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local hrp = p.Character.HumanoidRootPart
-            hrp.Size = Vector3.new(s, s, s)
-            hrp.Transparency = 0.7 -- Visualisasi Hitbox (Transparan agar terlihat kotak)
-            hrp.Color = Color3.new(1, 0, 0) -- Warna Hitbox merah
-            hrp.CanCollide = false -- Agar tidak nabrak
-            HitboxLabel.Text = "Killer Hitbox: " .. s
+            local selection = hrp:FindFirstChild("AdiHitboxVisual")
+            
+            if visualEnabled then
+                if not selection then
+                    selection = Instance.new("SelectionBox")
+                    selection.Name = "AdiHitboxVisual"
+                    selection.Parent = hrp
+                    selection.Adornee = hrp
+                    selection.LineThickness = 0.05
+                    selection.SurfaceTransparency = 1 -- Hanya garis saja, isi kotak bening
+                end
+                selection.Color3 = (p.TeamColor == BrickColor.new("Really red")) and Color3.new(1,0,0) or Color3.new(1,1,1)
+            else
+                if selection then selection:Destroy() end
+            end
         end
     end
 end
 
-HitboxInput.FocusLost:Connect(function(enterPressed)
-    if enterPressed then setHitbox(HitboxInput.Text) end
+VisualBtn.MouseButton1Click:Connect(function()
+    visualEnabled = not visualEnabled
+    if visualEnabled then
+        VisualBtn.Text = "Visual Hitbox: ON"
+        VisualBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    else
+        VisualBtn.Text = "Visual Hitbox: OFF"
+        VisualBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    end
+    updateVisuals()
+end)
+
+-- Loop agar visual selalu nempel meskipun pemain baru spawn
+RunService.Heartbeat:Connect(function()
+    if visualEnabled then updateVisuals() end
 end)
 
 -- --- 5. FITUR CROSSHAIR ---
