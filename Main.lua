@@ -1,72 +1,73 @@
--- [[ ADI PROJECT - FINAL FIX ULTIMATE V12 ]] --
+-- [[ ADI PROJECT - FINAL FIX V13 (MOUSE MOVEMENT FIX) ]] --
 
--- 1. PROTEKSI ANTI-BLACKSCREEN
--- Menunggu sampai game benar-benar ter-load sempurna sebelum script berjalan
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
-task.wait(3) -- Jeda tambahan 3 detik demi keamanan engine Roblox
+if not game:IsLoaded() then game.Loaded:Wait() end
+task.wait(2)
 
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local players = game:GetService("Players")
 local lp = players.LocalPlayer
 
--- 2. SETUP SCREEN GUI
+-- 1. SETUP GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AdiMenuGui"
 ScreenGui.Parent = lp:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- 3. SETUP FRAME UTAMA (FLOATING & DRAGGABLE)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.5, -125, 0.5, -200)
 MainFrame.Size = UDim2.new(0, 260, 0, 450)
 MainFrame.Active = true
-MainFrame.Draggable = true -- Bisa digeser ke mana saja
+MainFrame.Draggable = true
+MainFrame.Visible = true -- Default terbuka biar kelihatan
 
 local MainCorner = Instance.new("UICorner", MainFrame)
 MainCorner.CornerRadius = UDim.new(0, 10)
 
-local Title = Instance.new("TextLabel")
-Title.Parent = MainFrame
-Title.Text = "ADI MENU PRO FINAL V12"
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Text = "ADI MENU PRO V13"
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 18
+Instance.new("UICorner", Title)
 
-local TitleCorner = Instance.new("UICorner", Title)
+-- --- [FIX: MOUSE MOVEMENT LOGIC] ---
+local menuOpen = true
 
--- --- [FITUR KHUSUS: MOUSE UNLOCKER] ---
--- Memperbaiki masalah tidak bisa klik di game yang kursornya hilang
-local function ToggleMenu()
-    local isNowVisible = not MainFrame.Visible
-    MainFrame.Visible = isNowVisible
-    
-    -- Paksa kursor muncul/hilang mengikuti visibilitas menu
-    UserInputService.MouseIconEnabled = isNowVisible
-    
-    if isNowVisible then
+local function UpdateMouseState()
+    if menuOpen then
+        UserInputService.MouseIconEnabled = true
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
     else
+        -- Kembalikan ke normal sesuai setting game
         UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
     end
 end
 
-UserInputService.InputBegan:Connect(function(input, gp)
-    if not gp and input.KeyCode == Enum.KeyCode.LeftControl then
-        ToggleMenu()
+-- Force mouse behavior agar tidak ditarik ke tengah oleh game
+RunService.RenderStepped:Connect(function()
+    if menuOpen then
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
     end
 end)
 
--- --- [SECTION: SLIDERS SYSTEM] ---
+UserInputService.InputBegan:Connect(function(input, gp)
+    if not gp and input.KeyCode == Enum.KeyCode.LeftControl then
+        menuOpen = not menuOpen
+        MainFrame.Visible = menuOpen
+        UpdateMouseState()
+    end
+end)
+
+-- Inisialisasi awal kursor
+UpdateMouseState()
+
+-- --- [SLIDER & BUTTONS COPY DARI V12 DENGAN PENYESUAIAN] ---
 
 local function createSlider(titleText, labelText, posY, color)
     local title = Instance.new("TextLabel", MainFrame)
@@ -90,31 +91,27 @@ local function createSlider(titleText, labelText, posY, color)
     bg.Position = UDim2.new(0.1, 0, 0, posY + 42)
     bg.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     bg.BorderSizePixel = 0
-    Instance.new("UICorner", bg).CornerRadius = UDim.new(1, 0)
+    Instance.new("UICorner", bg)
 
     local btn = Instance.new("TextButton", bg)
     btn.Size = UDim2.new(0, 12, 2.5, 0)
     btn.Position = UDim2.new(0, 0, -0.7, 0)
     btn.Text = ""
     btn.BackgroundColor3 = color
-    btn.BorderSizePixel = 0
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+    Instance.new("UICorner", btn)
 
     return btn, label, bg
 end
 
 local SpdBtn, SpdLabel, SpdBg = createSlider("WalkSpeed Adjuster", "Speed: 16", 45, Color3.fromRGB(0, 170, 255))
-local HitBtn, HitLabel, HitBg = createSlider("Hitbox Extender", "Size: 2 (Normal)", 105, Color3.fromRGB(255, 50, 50))
+local HitBtn, HitLabel, HitBg = createSlider("Hitbox Extender", "Size: 2", 105, Color3.fromRGB(255, 50, 50))
 
 local dragSpd, dragHit = false, false
 SpdBtn.MouseButton1Down:Connect(function() dragSpd = true end)
 HitBtn.MouseButton1Down:Connect(function() dragHit = true end)
 
 UserInputService.InputEnded:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 then 
-        dragSpd = false 
-        dragHit = false 
-    end
+    if i.UserInputType == Enum.UserInputType.MouseButton1 then dragSpd, dragHit = false, false end
 end)
 
 RunService.RenderStepped:Connect(function()
@@ -142,8 +139,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- --- [SECTION: BUTTONS SYSTEM] ---
-
 local function createBtn(text, pos, color)
     local btn = Instance.new("TextButton", MainFrame)
     btn.Text = text
@@ -152,8 +147,7 @@ local function createBtn(text, pos, color)
     btn.BackgroundColor3 = color
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.SourceSansBold
-    btn.BorderSizePixel = 0
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
+    Instance.new("UICorner", btn)
     return btn
 end
 
@@ -163,9 +157,7 @@ local VisBtn = createBtn("Visual Hitbox: OFF", 265, Color3.fromRGB(140, 0, 0))
 local CrBtn = createBtn("Toggle Crosshair", 305, Color3.fromRGB(50, 50, 50))
 local ScBtn = createBtn("Auto Skillcheck: OFF", 345, Color3.fromRGB(140, 0, 0))
 
--- --- LOGIKA PER FITUR ---
-
--- Visual Hitbox (Hanya aktif jika tombol ON)
+-- LOGIC FITUR (ESP, Visual, Skillcheck)
 local vE = false
 VisBtn.MouseButton1Click:Connect(function()
     vE = not vE
@@ -191,7 +183,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Wallhack & Generator ESP
 WhBtn.MouseButton1Click:Connect(function()
     for _, p in pairs(players:GetPlayers()) do
         if p ~= lp and p.Character then
@@ -215,17 +206,14 @@ GenBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Crosshair
 local dot = Instance.new("Frame", ScreenGui)
 dot.Size = UDim2.new(0, 4, 0, 4)
 dot.Position = UDim2.new(0.5, -2, 0.5, -2)
 dot.BackgroundColor3 = Color3.new(1, 0, 0)
 dot.Visible = false
-local dotCorner = Instance.new("UICorner", dot)
-dotCorner.CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", dot)
 CrBtn.MouseButton1Click:Connect(function() dot.Visible = not dot.Visible end)
 
--- Auto Skillcheck
 local aS = false
 ScBtn.MouseButton1Click:Connect(function()
     aS = not aS
@@ -249,5 +237,3 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-
-warn("[ ADI PROJECT ] V12 FINAL LOADED - SAFE & STABLE")
