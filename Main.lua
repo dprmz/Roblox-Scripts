@@ -96,7 +96,7 @@ SpeedInput.FocusLost:Connect(function()
     setSpeed(SpeedInput.Text)
 end)
 
--- --- 3. FITUR WALLHACK (TOGGLE) ---
+-- --- 3. FITUR WALLHACK (ESP 2 WARNA) ---
 local WhBtn = Instance.new("TextButton", MainFrame)
 WhBtn.Text = "Wallhack (ESP)"
 WhBtn.Size = UDim2.new(0.8, 0, 0, 35)
@@ -105,17 +105,57 @@ WhBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 150)
 WhBtn.TextColor3 = Color3.new(1, 1, 1)
 
 WhBtn.MouseButton1Click:Connect(function()
-    for _, p in pairs(players:GetPlayers()) do
+    for _, p in pairs(game.Players:GetPlayers()) do
         if p ~= lp and p.Character then
             local hl = p.Character:FindFirstChild("AdiESP") or Instance.new("Highlight", p.Character)
             hl.Name = "AdiESP"
-            hl.FillColor = Color3.new(1, 0, 0)
+            hl.OutlineColor = Color3.new(1, 1, 1)
+            
+            -- Logika Pembeda Warna
+            -- Biasanya Killer punya TeamColor merah atau Nama Folder tertentu
+            if p.TeamColor == BrickColor.new("Really red") or p:FindFirstChild("KillerConfig") then
+                hl.FillColor = Color3.new(1, 0, 0) -- MERAH untuk Killer
+            else
+                hl.FillColor = Color3.new(0, 0, 1) -- BIRU untuk Survivor
+            end
             hl.Enabled = true
         end
     end
 end)
 
--- --- 4. FITUR CROSSHAIR ---
+-- --- 4. FITUR KILLER HITBOX (EXPAND) ---
+local HitboxLabel = Instance.new("TextLabel", MainFrame)
+HitboxLabel.Text = "Killer Hitbox: 2 (Default)"
+HitboxLabel.Size = UDim2.new(1, 0, 0, 20)
+HitboxLabel.Position = UDim2.new(0, 0, 0, 275)
+HitboxLabel.BackgroundTransparency = 1
+HitboxLabel.TextColor3 = Color3.new(1, 1, 1)
+
+local HitboxInput = Instance.new("TextBox", MainFrame)
+HitboxInput.Size = UDim2.new(0.8, 0, 0, 25)
+HitboxInput.Position = UDim2.new(0.1, 0, 0, 295)
+HitboxInput.PlaceholderText = "Set Hitbox (ex: 10)"
+HitboxInput.Text = "2"
+
+local function setHitbox(size)
+    local s = tonumber(size) or 2
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = p.Character.HumanoidRootPart
+            hrp.Size = Vector3.new(s, s, s)
+            hrp.Transparency = 0.7 -- Visualisasi Hitbox (Transparan agar terlihat kotak)
+            hrp.Color = Color3.new(1, 0, 0) -- Warna Hitbox merah
+            hrp.CanCollide = false -- Agar tidak nabrak
+            HitboxLabel.Text = "Killer Hitbox: " .. s
+        end
+    end
+end
+
+HitboxInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed then setHitbox(HitboxInput.Text) end
+end)
+
+-- --- 5. FITUR CROSSHAIR ---
 local CrBtn = Instance.new("TextButton", MainFrame)
 CrBtn.Text = "Toggle Crosshair"
 CrBtn.Size = UDim2.new(0.8, 0, 0, 35)
@@ -131,7 +171,7 @@ dot.Visible = false
 
 CrBtn.MouseButton1Click:Connect(function() dot.Visible = not dot.Visible end)
 
--- --- 5. FITUR PERFECT SKILLCHECK (AUTO SPACE) ---
+-- --- 6. FITUR PERFECT SKILLCHECK (AUTO SPACE) ---
 local ScBtn = Instance.new("TextButton", MainFrame)
 ScBtn.Text = "Auto Skillcheck: OFF"
 ScBtn.Size = UDim2.new(0.8, 0, 0, 35)
