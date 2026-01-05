@@ -1,6 +1,5 @@
--- [[ ADI PROJECT - V23 FINAL SUPER COMPLETE ]] --
+-- [[ ADI PROJECT - V24 FINAL (PERCENTAGE GEN + NO OUTLINE) ]] --
 
--- 1. INITIAL GUARD (Anti Black Screen & Loading Guard)
 if not game:IsLoaded() then game.Loaded:Wait() end
 local lp = game:GetService("Players").LocalPlayer
 local pGui = lp:WaitForChild("PlayerGui")
@@ -10,9 +9,9 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- 2. GUI SETUP (CORE UI OVERLAY - ALWAYS ON TOP)
+-- 1. GUI OVERLAY SETUP
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AdiMenu_V23_Final"
+ScreenGui.Name = "AdiMenu_V24_Final"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 2147483647 
 
@@ -31,7 +30,7 @@ MainFrame.Draggable = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Text = "ADI MENU PRO V23"
+Title.Text = "ADI MENU PRO V24"
 Title.Size = UDim2.new(1, 0, 0, 45)
 Title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Title.TextColor3 = Color3.new(1, 1, 1)
@@ -72,7 +71,7 @@ local function createBtn(txt, pos, col)
     return b
 end
 
--- --- [SLIDERS: SPEED & HITBOX EXTEND] ---
+-- --- [SLIDERS: SPEED & HITBOX] ---
 local SpdBtn, SpdL, SpdBg = createSlider("WalkSpeed Adjuster", "Speed: 16", 50, Color3.fromRGB(0, 170, 255))
 local HitBtn, HitL, HitBg = createSlider("Hitbox Adjuster", "Size: 2", 110, Color3.fromRGB(255, 50, 50))
 local dS, dH = false, false
@@ -103,15 +102,15 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- --- [BUTTONS: ESP & VISUALS] ---
-local WhBtn = createBtn("Wallhack (Blue/Red)", 175, Color3.fromRGB(70, 0, 130))
-local GenBtn = createBtn("ESP Generator", 225, Color3.fromRGB(160, 120, 0))
+-- --- [BUTTONS LIST] ---
+local WhBtn = createBtn("Wallhack (No Outline)", 175, Color3.fromRGB(70, 0, 130))
+local GenBtn = createBtn("Gen ESP (% Status)", 225, Color3.fromRGB(160, 120, 0))
 local VisBtn = createBtn("Visual Hitbox Line: OFF", 275, Color3.fromRGB(140, 0, 0))
 local ScBtn = createBtn("AUTO PERFECT: OFF", 325, Color3.fromRGB(50, 50, 50))
 local CrBtn = createBtn("Toggle Crosshair", 375, Color3.fromRGB(50, 50, 50))
 local ExitBtn = createBtn("Close Script", 440, Color3.fromRGB(200, 0, 0))
 
--- --- [LOGIKA VISUAL LINE HITBOX] ---
+-- --- [VISUAL LINE HITBOX] ---
 local visualEnabled = false
 VisBtn.MouseButton1Click:Connect(function()
     visualEnabled = not visualEnabled
@@ -135,7 +134,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- --- [LOGIKA AUTO PERFECT SKILLCHECK] ---
+-- --- [AUTO PERFECT SKILLCHECK] ---
 local autoSkill = false
 ScBtn.MouseButton1Click:Connect(function()
     autoSkill = not autoSkill
@@ -171,12 +170,13 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- --- [FIXED ESP: SURVIVOR BLUE, KILLER RED] ---
+-- --- [FIXED ESP: NO OUTLINE] ---
 WhBtn.MouseButton1Click:Connect(function()
     for _, p in pairs(game.Players:GetPlayers()) do
         if p ~= lp and p.Character then
             local hl = p.Character:FindFirstChild("AdiESP") or Instance.new("Highlight", p.Character)
             hl.Name = "AdiESP"
+            hl.OutlineTransparency = 1 -- MENGHILANGKAN GARIS PINGGIR
             local isKiller = false
             if p.Team then
                 local tn = p.Team.Name:lower()
@@ -188,12 +188,31 @@ WhBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- --- [GENERATOR & CROSSHAIR] ---
+-- --- [GEN ESP WITH PERCENTAGE & NO OUTLINE] ---
 GenBtn.MouseButton1Click:Connect(function()
     for _, o in pairs(workspace:GetDescendants()) do
         if (o.Name:lower():find("generator") or o.Name:lower():find("computer")) and (o:IsA("Model") or o:IsA("BasePart")) then
+            -- 1. Highlight Tanpa Outline
             local h = o:FindFirstChild("GenESP") or Instance.new("Highlight", o)
-            h.Name = "GenESP"; h.FillColor = Color3.new(1, 1, 0); h.Enabled = true
+            h.Name = "GenESP"; h.FillColor = Color3.new(1, 1, 0); h.OutlineTransparency = 1; h.Enabled = true
+            
+            -- 2. Persentase Label
+            if not o:FindFirstChild("GenLabel") then
+                local bGui = Instance.new("BillboardGui", o)
+                bGui.Name = "GenLabel"; bGui.Size = UDim2.new(0, 100, 0, 50); bGui.AlwaysOnTop = true; bGui.ExtentsOffset = Vector3.new(0, 3, 0)
+                local txt = Instance.new("TextLabel", bGui)
+                txt.Size = UDim2.new(1, 0, 1, 0); txt.BackgroundTransparency = 1; txt.TextColor3 = Color3.new(1, 1, 0); txt.Font = Enum.Font.SourceSansBold; txt.TextSize = 18
+                
+                -- Loop Update Persentase
+                task.spawn(function()
+                    while h.Enabled do
+                        local prog = o:FindFirstChild("Progress") or o:FindFirstChild("Value") or o:FindFirstChild("Completion")
+                        local percent = prog and math.floor(prog.Value) or 0
+                        txt.Text = "GEN - "..percent.."%"
+                        task.wait(1)
+                    end
+                end)
+            end
         end
     end
 end)
@@ -203,4 +222,3 @@ dot.Size = UDim2.new(0, 6, 0, 6); dot.Position = UDim2.new(0.5, -3, 0.5, -3); do
 CrBtn.MouseButton1Click:Connect(function() dot.Visible = not dot.Visible end)
 
 ExitBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
-print("ADI MENU V23 DEPLOYED - ALL FEATURES ACTIVE")
