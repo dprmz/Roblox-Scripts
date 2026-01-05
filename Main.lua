@@ -107,17 +107,38 @@ WhBtn.TextColor3 = Color3.new(1, 1, 1)
 WhBtn.MouseButton1Click:Connect(function()
     for _, p in pairs(game.Players:GetPlayers()) do
         if p ~= lp and p.Character then
+            -- Cari atau buat Highlight
             local hl = p.Character:FindFirstChild("AdiESP") or Instance.new("Highlight", p.Character)
             hl.Name = "AdiESP"
-            hl.OutlineColor = Color3.new(1, 1, 1)
+            hl.OutlineColor = Color3.new(1, 1, 1) -- Garis tepi putih
+            hl.FillTransparency = 0.5
             
-            -- Logika Pembeda Warna
-            -- Biasanya Killer punya TeamColor merah atau Nama Folder tertentu
-            if p.TeamColor == BrickColor.new("Really red") or p:FindFirstChild("KillerConfig") then
-                hl.FillColor = Color3.new(1, 0, 0) -- MERAH untuk Killer
-            else
-                hl.FillColor = Color3.new(0, 0, 1) -- BIRU untuk Survivor
+            -- --- LOGIKA PENENTUAN WARNA ---
+            local isKiller = false
+            
+            -- Cek berdasarkan TeamColor (Cara 1)
+            if p.TeamColor == BrickColor.new("Really red") or p.Team.Name:lower():find("killer") then
+                isKiller = true
             end
+            
+            -- Cek berdasarkan Tool/Senjata (Cara 2: Jika killer pegang pisau/senjata khusus)
+            if p.Backpack:FindFirstChild("Knife") or (p.Character and p.Character:FindFirstChild("Knife")) then
+                isKiller = true
+            end
+
+            -- Cek berdasarkan Nama Character (Cara 3: Jika di map tersebut Killer punya nama model khusus)
+            if p.Character:FindFirstChild("KillerConfig") or p.Character.Name == "Killer" then
+                isKiller = true
+            end
+
+            -- Terpakan Warna
+            if isKiller then
+                hl.FillColor = Color3.fromRGB(255, 0, 0) -- MERAH murni untuk Killer
+                print("[ ADI ] Killer Terdeteksi: " .. p.Name)
+            else
+                hl.FillColor = Color3.fromRGB(0, 150, 255) -- BIRU cerah untuk Survivor
+            end
+            
             hl.Enabled = true
         end
     end
