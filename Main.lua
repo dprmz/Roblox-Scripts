@@ -1,19 +1,37 @@
--- [[ ADI PROJECT - FINAL FIX V13 (MOUSE MOVEMENT FIX) ]] --
+-- [[ ADI PROJECT - V14 ULTIMATE STABLE ]] --
 
-if not game:IsLoaded() then game.Loaded:Wait() end
-task.wait(2)
+-- 1. DEEP LOADING GUARD (Anti Black Screen)
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+-- Menunggu hingga karakter benar-benar muncul di dunia game
+local players = game:GetService("Players")
+local lp = players.LocalPlayer
+repeat task.wait(0.5) until lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+
+-- Jeda tambahan 5 detik untuk memastikan transisi map selesai total
+task.wait(5)
 
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local players = game:GetService("Players")
-local lp = players.LocalPlayer
 
--- 1. SETUP GUI
+-- 2. SAFE GUI INJECTION
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AdiMenuGui"
-ScreenGui.Parent = lp:WaitForChild("PlayerGui")
+ScreenGui.Name = "AdiMenuV14"
+-- Gunakan pcall agar jika gagal pasang, tidak membuat game crash
+pcall(function()
+    if gethui then
+        ScreenGui.Parent = gethui() -- Executor Modern
+    elseif game:GetService("CoreGui"):FindFirstChild("RobloxGui") then
+        ScreenGui.Parent = game:GetService("CoreGui") -- Executor Standard
+    else
+        ScreenGui.Parent = lp:WaitForChild("PlayerGui") -- Fallback
+    end
+end)
 ScreenGui.ResetOnSpawn = false
 
+-- 3. SETUP FRAME UTAMA
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -22,13 +40,12 @@ MainFrame.Position = UDim2.new(0.5, -125, 0.5, -200)
 MainFrame.Size = UDim2.new(0, 260, 0, 450)
 MainFrame.Active = true
 MainFrame.Draggable = true
-MainFrame.Visible = true -- Default terbuka biar kelihatan
 
 local MainCorner = Instance.new("UICorner", MainFrame)
 MainCorner.CornerRadius = UDim.new(0, 10)
 
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Text = "ADI MENU PRO V13"
+Title.Text = "ADI MENU PRO V14"
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Title.TextColor3 = Color3.new(1, 1, 1)
@@ -36,7 +53,7 @@ Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 18
 Instance.new("UICorner", Title)
 
--- --- [FIX: MOUSE MOVEMENT LOGIC] ---
+-- --- [MOUSE FIX LOGIC] ---
 local menuOpen = true
 
 local function UpdateMouseState()
@@ -44,14 +61,13 @@ local function UpdateMouseState()
         UserInputService.MouseIconEnabled = true
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
     else
-        -- Kembalikan ke normal sesuai setting game
         UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
     end
 end
 
--- Force mouse behavior agar tidak ditarik ke tengah oleh game
+-- Paksa kursor bisa gerak setiap frame
 RunService.RenderStepped:Connect(function()
-    if menuOpen then
+    if menuOpen and MainFrame.Visible then
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
     end
 end)
@@ -64,11 +80,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
--- Inisialisasi awal kursor
-UpdateMouseState()
-
--- --- [SLIDER & BUTTONS COPY DARI V12 DENGAN PENYESUAIAN] ---
-
+-- --- [SLIDER BUILDER] ---
 local function createSlider(titleText, labelText, posY, color)
     local title = Instance.new("TextLabel", MainFrame)
     title.Text = titleText
@@ -139,6 +151,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- --- [BUTTONS] ---
 local function createBtn(text, pos, color)
     local btn = Instance.new("TextButton", MainFrame)
     btn.Text = text
@@ -157,7 +170,7 @@ local VisBtn = createBtn("Visual Hitbox: OFF", 265, Color3.fromRGB(140, 0, 0))
 local CrBtn = createBtn("Toggle Crosshair", 305, Color3.fromRGB(50, 50, 50))
 local ScBtn = createBtn("Auto Skillcheck: OFF", 345, Color3.fromRGB(140, 0, 0))
 
--- LOGIC FITUR (ESP, Visual, Skillcheck)
+-- LOGIC FITUR
 local vE = false
 VisBtn.MouseButton1Click:Connect(function()
     vE = not vE
@@ -237,3 +250,5 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
+print("V14 LOADED: ANTI-BLACKSCREEN ACTIVE")
