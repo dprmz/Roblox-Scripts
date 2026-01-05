@@ -1,6 +1,6 @@
--- [[ ADI PROJECT - V21 FINAL ULTIMATE (BIG FONT & PERFECT FIX) ]] --
+-- [[ ADI PROJECT - V23 FINAL SUPER COMPLETE ]] --
 
--- 1. INITIAL GUARD
+-- 1. INITIAL GUARD (Anti Black Screen & Loading Guard)
 if not game:IsLoaded() then game.Loaded:Wait() end
 local lp = game:GetService("Players").LocalPlayer
 local pGui = lp:WaitForChild("PlayerGui")
@@ -10,11 +10,11 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- 2. GUI SETUP (CORE UI OVERLAY)
+-- 2. GUI SETUP (CORE UI OVERLAY - ALWAYS ON TOP)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AdiMenu_V21_Final"
+ScreenGui.Name = "AdiMenu_V23_Final"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 2147483647 -- Prioritas tertinggi (di atas menu ESC)
+ScreenGui.DisplayOrder = 2147483647 
 
 pcall(function()
     if gethui then ScreenGui.Parent = gethui()
@@ -24,19 +24,19 @@ end)
 
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.Position = UDim2.new(0.5, -135, 0.5, -220)
-MainFrame.Size = UDim2.new(0, 270, 0, 480) -- Ukuran Frame sedikit diperbesar
+MainFrame.Position = UDim2.new(0.5, -135, 0.5, -240)
+MainFrame.Size = UDim2.new(0, 270, 0, 520) 
 MainFrame.Active = true
 MainFrame.Draggable = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Text = "ADI MENU PRO V21"
-Title.Size = UDim2.new(1, 0, 0, 50) -- Judul lebih besar
+Title.Text = "ADI MENU PRO V23"
+Title.Size = UDim2.new(1, 0, 0, 45)
 Title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 24 -- FONT JUDUL DIPERBESAR
+Title.TextSize = 22
 Instance.new("UICorner", Title)
 
 -- --- [MOUSE & TOGGLE LOGIC] ---
@@ -47,91 +47,124 @@ RunService.RenderStepped:Connect(function()
         UserInputService.MouseIconEnabled = true
     end
 end)
-
-UserInputService.InputBegan:Connect(function(input, gp)
-    if not gp and input.KeyCode == Enum.KeyCode.LeftControl then
-        menuOpen = not menuOpen
-        MainFrame.Visible = menuOpen
+UserInputService.InputBegan:Connect(function(i, gp)
+    if not gp and i.KeyCode == Enum.KeyCode.LeftControl then
+        menuOpen = not menuOpen; MainFrame.Visible = menuOpen
     end
 end)
 
--- --- [BUILDER FUNCTIONS WITH BIG FONT] ---
+-- --- [BUILDER FUNCTIONS] ---
+local function createSlider(titleT, labelT, posY, color)
+    local t = Instance.new("TextLabel", MainFrame)
+    t.Text = titleT; t.Size = UDim2.new(1,0,0,20); t.Position = UDim2.new(0,0,0,posY); t.BackgroundTransparency = 1; t.TextColor3 = Color3.fromRGB(180,180,180); t.TextSize = 14
+    local l = Instance.new("TextLabel", MainFrame)
+    l.Text = labelT; l.Size = UDim2.new(1,0,0,20); l.Position = UDim2.new(0,0,0,posY+18); l.BackgroundTransparency = 1; l.TextColor3 = Color3.new(1,1,1); l.Font = Enum.Font.SourceSansBold; l.TextSize = 16
+    local bg = Instance.new("Frame", MainFrame)
+    bg.Size = UDim2.new(0.8,0,0,6); bg.Position = UDim2.new(0.1,0,0,posY+45); bg.BackgroundColor3 = Color3.fromRGB(45,45,45); bg.BorderSizePixel = 0; Instance.new("UICorner", bg)
+    local btn = Instance.new("TextButton", bg)
+    btn.Size = UDim2.new(0,14,2.5,0); btn.Position = UDim2.new(0,0,-0.7,0); btn.Text = ""; btn.BackgroundColor3 = color; Instance.new("UICorner", btn)
+    return btn, l, bg
+end
+
 local function createBtn(txt, pos, col)
     local b = Instance.new("TextButton", MainFrame)
-    b.Text = txt
-    b.Size = UDim2.new(0.85, 0, 0, 45) -- Ukuran tombol diperbesar
-    b.Position = UDim2.new(0.075, 0, 0, pos)
-    b.BackgroundColor3 = col
-    b.TextColor3 = Color3.new(1, 1, 1)
-    b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 18 -- FONT TOMBOL DIPERBESAR
-    b.BorderSizePixel = 0
-    Instance.new("UICorner", b)
+    b.Text = txt; b.Size = UDim2.new(0.85,0,0,40); b.Position = UDim2.new(0.075,0,0,pos); b.BackgroundColor3 = col; b.TextColor3 = Color3.new(1,1,1); b.Font = Enum.Font.SourceSansBold; b.TextSize = 17; Instance.new("UICorner", b)
     return b
 end
 
--- --- [FITUR LIST] ---
-local WhBtn = createBtn("Wallhack (Blue/Red)", 65, Color3.fromRGB(70, 0, 130))
-local GenBtn = createBtn("ESP Generator", 125, Color3.fromRGB(160, 120, 0))
-local HitBtn = createBtn("Extend Hitbox", 185, Color3.fromRGB(200, 50, 50))
-local ScBtn = createBtn("AUTO PERFECT: OFF", 245, Color3.fromRGB(140, 0, 0))
-local CrBtn = createBtn("Toggle Crosshair", 305, Color3.fromRGB(50, 50, 50))
-local ExitBtn = createBtn("Close Script", 400, Color3.fromRGB(200, 0, 0))
+-- --- [SLIDERS: SPEED & HITBOX EXTEND] ---
+local SpdBtn, SpdL, SpdBg = createSlider("WalkSpeed Adjuster", "Speed: 16", 50, Color3.fromRGB(0, 170, 255))
+local HitBtn, HitL, HitBg = createSlider("Hitbox Adjuster", "Size: 2", 110, Color3.fromRGB(255, 50, 50))
+local dS, dH = false, false
 
--- --- [LOGIKA AUTO PERFECT SKILLCHECK V21 - HIGH PRECISION] ---
+SpdBtn.MouseButton1Down:Connect(function() dS = true end)
+HitBtn.MouseButton1Down:Connect(function() dH = true end)
+UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dS, dH = false end end)
+
+RunService.RenderStepped:Connect(function()
+    local mX = UserInputService:GetMouseLocation().X
+    if dS then
+        local rX = math.clamp((mX - SpdBg.AbsolutePosition.X) / SpdBg.AbsoluteSize.X, 0, 1)
+        SpdBtn.Position = UDim2.new(rX, -7, -0.7, 0)
+        local val = 16 + (rX * 184)
+        if lp.Character and lp.Character:FindFirstChild("Humanoid") then lp.Character.Humanoid.WalkSpeed = val; SpdL.Text = "Speed: "..math.floor(val) end
+    end
+    if dH then
+        local rX = math.clamp((mX - HitBg.AbsolutePosition.X) / HitBg.AbsoluteSize.X, 0, 1)
+        HitBtn.Position = UDim2.new(rX, -7, -0.7, 0)
+        local size = math.floor(2 + (rX * 48))
+        HitL.Text = "Size: "..size
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                p.Character.HumanoidRootPart.Size = Vector3.new(size, size, size)
+                p.Character.HumanoidRootPart.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- --- [BUTTONS: ESP & VISUALS] ---
+local WhBtn = createBtn("Wallhack (Blue/Red)", 175, Color3.fromRGB(70, 0, 130))
+local GenBtn = createBtn("ESP Generator", 225, Color3.fromRGB(160, 120, 0))
+local VisBtn = createBtn("Visual Hitbox Line: OFF", 275, Color3.fromRGB(140, 0, 0))
+local ScBtn = createBtn("AUTO PERFECT: OFF", 325, Color3.fromRGB(50, 50, 50))
+local CrBtn = createBtn("Toggle Crosshair", 375, Color3.fromRGB(50, 50, 50))
+local ExitBtn = createBtn("Close Script", 440, Color3.fromRGB(200, 0, 0))
+
+-- --- [LOGIKA VISUAL LINE HITBOX] ---
+local visualEnabled = false
+VisBtn.MouseButton1Click:Connect(function()
+    visualEnabled = not visualEnabled
+    VisBtn.Text = visualEnabled and "Visual Hitbox Line: ON" or "Visual Hitbox Line: OFF"
+    VisBtn.BackgroundColor3 = visualEnabled and Color3.fromRGB(0, 130, 0) or Color3.fromRGB(140, 0, 0)
+end)
+
+RunService.Heartbeat:Connect(function()
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = p.Character.HumanoidRootPart
+            local line = hrp:FindFirstChild("AdiVisualLine")
+            if visualEnabled then
+                if not line then
+                    line = Instance.new("SelectionBox", hrp)
+                    line.Name = "AdiVisualLine"; line.LineThickness = 0.05
+                    line.Color3 = Color3.new(1, 0, 0); line.Adornee = hrp
+                end
+            elseif line then line:Destroy() end
+        end
+    end
+end)
+
+-- --- [LOGIKA AUTO PERFECT SKILLCHECK] ---
 local autoSkill = false
 ScBtn.MouseButton1Click:Connect(function()
     autoSkill = not autoSkill
     ScBtn.Text = autoSkill and "AUTO PERFECT: ON" or "AUTO PERFECT: OFF"
-    ScBtn.BackgroundColor3 = autoSkill and Color3.fromRGB(0, 130, 0) or Color3.fromRGB(140, 0, 0)
+    ScBtn.BackgroundColor3 = autoSkill and Color3.fromRGB(0, 130, 0) or Color3.fromRGB(50, 50, 50)
 end)
 
 RunService.RenderStepped:Connect(function()
     if not autoSkill then return end
-    
-    -- Mencari UI Skillcheck secara luas
-    local sg = pGui:FindFirstChild("SkillCheck") or pGui:FindFirstChild("ActionUI") or pGui:FindFirstChild("TugOfWar")
+    local sg = pGui:FindFirstChild("SkillCheck") or pGui:FindFirstChild("ActionUI")
     if sg and sg.Enabled then
-        local pointer = nil
-        local target = nil
-        
-        -- Memindai elemen UI untuk Jarum Merah dan Zona Putih
+        local ptr, tgt = nil, nil
         for _, v in pairs(sg:GetDescendants()) do
             if v:IsA("GuiObject") and v.Visible then
-                -- Cari objek merah (Jarum)
-                if v.BackgroundColor3 == Color3.new(1, 0, 0) or (v:IsA("ImageLabel") and v.ImageColor3 == Color3.new(1, 0, 0)) then
-                    pointer = v
-                -- Cari objek putih atau bernama 'perfect' (Zona Sukses)
-                elseif v.BackgroundColor3 == Color3.new(1, 1, 1) or v.Name:lower():find("perfect") or v.Name:lower():find("white") then
-                    target = v
-                end
+                if v.BackgroundColor3 == Color3.new(1, 0, 0) or (v:IsA("ImageLabel") and v.ImageColor3 == Color3.new(1, 0, 0)) then ptr = v
+                elseif v.BackgroundColor3 == Color3.new(1, 1, 1) or v.Name:lower():find("perfect") then tgt = v end
             end
         end
-        
-        if pointer and target then
-            -- Logika Deteksi Berdasarkan Rotasi (FTF Style)
-            if pointer.Rotation ~= 0 or target.Rotation ~= 0 then
-                local pRot = pointer.Rotation % 360
-                local tRot = target.Rotation % 360
-                
-                -- Jika jarak rotasi mendekati (Toleransi diperketat untuk Perfect)
-                if math.abs(pRot - tRot) < 7 then
+        if ptr and tgt then
+            if ptr.Rotation ~= 0 then
+                if math.abs((ptr.Rotation % 360) - (tgt.Rotation % 360)) < 7 then
                     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                    task.wait(0.01)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-                    task.wait(0.6) -- Jeda stabilisasi
+                    task.wait(0.01); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game); task.wait(0.6)
                 end
             else
-                -- Logika Deteksi Berdasarkan Posisi X (Bar Mendatar)
-                local pX = pointer.AbsolutePosition.X + (pointer.AbsoluteSize.X / 2)
-                local tX = target.AbsolutePosition.X
-                local tWidth = target.AbsoluteSize.X
-                
-                if pX >= tX and pX <= (tX + tWidth) then
+                local pX = ptr.AbsolutePosition.X + (ptr.AbsoluteSize.X / 2)
+                if pX >= tgt.AbsolutePosition.X and pX <= (tgt.AbsolutePosition.X + tgt.AbsoluteSize.X) then
                     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                    task.wait(0.01)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-                    task.wait(0.6)
+                    task.wait(0.01); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game); task.wait(0.6)
                 end
             end
         end
@@ -144,34 +177,18 @@ WhBtn.MouseButton1Click:Connect(function()
         if p ~= lp and p.Character then
             local hl = p.Character:FindFirstChild("AdiESP") or Instance.new("Highlight", p.Character)
             hl.Name = "AdiESP"
-            
             local isKiller = false
             if p.Team then
-                local teamName = p.Team.Name:lower()
-                if teamName:find("killer") or teamName:find("beast") or teamName:find("murder") then
-                    isKiller = true
-                end
+                local tn = p.Team.Name:lower()
+                if tn:find("killer") or tn:find("beast") or tn:find("murder") then isKiller = true end
             end
-            
-            hl.FillColor = isKiller and Color3.new(1, 0, 0) or Color3.new(0, 0.5, 1)
-            hl.FillTransparency = 0.5
-            hl.OutlineColor = Color3.new(1, 1, 1)
-            hl.Enabled = true
+            hl.FillColor = isKiller and Color3.new(1, 0, 0) or Color3.new(0, 0.4, 1)
+            hl.FillTransparency = 0.5; hl.Enabled = true
         end
     end
 end)
 
--- --- [HITBOX & GENERATOR] ---
-HitBtn.MouseButton1Click:Connect(function()
-    for _, p in pairs(game.Players:GetPlayers()) do
-        if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            p.Character.HumanoidRootPart.Size = Vector3.new(15, 15, 15)
-            p.Character.HumanoidRootPart.CanCollide = false
-            p.Character.HumanoidRootPart.Transparency = 0.8
-        end
-    end
-end)
-
+-- --- [GENERATOR & CROSSHAIR] ---
 GenBtn.MouseButton1Click:Connect(function()
     for _, o in pairs(workspace:GetDescendants()) do
         if (o.Name:lower():find("generator") or o.Name:lower():find("computer")) and (o:IsA("Model") or o:IsA("BasePart")) then
@@ -181,12 +198,9 @@ GenBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Crosshair
 local dot = Instance.new("Frame", ScreenGui)
-dot.Size = UDim2.new(0, 6, 0, 6); dot.Position = UDim2.new(0.5, -3, 0.5, -3); dot.BackgroundColor3 = Color3.new(1,0,0)
-dot.Visible = false; Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
+dot.Size = UDim2.new(0, 6, 0, 6); dot.Position = UDim2.new(0.5, -3, 0.5, -3); dot.BackgroundColor3 = Color3.new(1,0,0); dot.Visible = false; Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
 CrBtn.MouseButton1Click:Connect(function() dot.Visible = not dot.Visible end)
 
 ExitBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
-
-print("ADI MENU V21 FINAL LOADED - BIG FONT EDITION")
+print("ADI MENU V23 DEPLOYED - ALL FEATURES ACTIVE")
