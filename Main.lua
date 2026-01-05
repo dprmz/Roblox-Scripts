@@ -1,17 +1,17 @@
--- [[ ADI PROJECT - V24 FINAL (PERCENTAGE GEN + NO OUTLINE) ]] --
+-- [[ ADI PROJECT - V25 FINAL (PERFECT SKILLCHECK + GEN COLOR LOGIC) ]] --
 
 if not game:IsLoaded() then game.Loaded:Wait() end
 local lp = game:GetService("Players").LocalPlayer
 local pGui = lp:WaitForChild("PlayerGui")
-task.wait(3) 
+task.wait(2) 
 
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- 1. GUI OVERLAY SETUP
+-- 1. GUI OVERLAY SETUP (ALWAYS ON TOP)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AdiMenu_V24_Final"
+ScreenGui.Name = "AdiMenu_V25_Final"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 2147483647 
 
@@ -30,12 +30,11 @@ MainFrame.Draggable = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Text = "ADI MENU PRO V24"
+Title.Text = "ADI MENU PRO V25"
 Title.Size = UDim2.new(1, 0, 0, 45)
 Title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 22
+Title.Font = Enum.Font.SourceSansBold; Title.TextSize = 22
 Instance.new("UICorner", Title)
 
 -- --- [MOUSE & TOGGLE LOGIC] ---
@@ -103,8 +102,8 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- --- [BUTTONS LIST] ---
-local WhBtn = createBtn("Wallhack (No Outline)", 175, Color3.fromRGB(70, 0, 130))
-local GenBtn = createBtn("Gen ESP (% Status)", 225, Color3.fromRGB(160, 120, 0))
+local WhBtn = createBtn("Wallhack Player", 175, Color3.fromRGB(70, 0, 130))
+local GenBtn = createBtn("ESP Generator (Logic)", 225, Color3.fromRGB(160, 120, 0))
 local VisBtn = createBtn("Visual Hitbox Line: OFF", 275, Color3.fromRGB(140, 0, 0))
 local ScBtn = createBtn("AUTO PERFECT: OFF", 325, Color3.fromRGB(50, 50, 50))
 local CrBtn = createBtn("Toggle Crosshair", 375, Color3.fromRGB(50, 50, 50))
@@ -134,7 +133,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- --- [AUTO PERFECT SKILLCHECK] ---
+-- --- [FIXED HIGH PRECISION AUTO PERFECT SKILLCHECK] ---
 local autoSkill = false
 ScBtn.MouseButton1Click:Connect(function()
     autoSkill = not autoSkill
@@ -149,34 +148,43 @@ RunService.RenderStepped:Connect(function()
         local ptr, tgt = nil, nil
         for _, v in pairs(sg:GetDescendants()) do
             if v:IsA("GuiObject") and v.Visible then
-                if v.BackgroundColor3 == Color3.new(1, 0, 0) or (v:IsA("ImageLabel") and v.ImageColor3 == Color3.new(1, 0, 0)) then ptr = v
-                elseif v.BackgroundColor3 == Color3.new(1, 1, 1) or v.Name:lower():find("perfect") then tgt = v end
+                if v.BackgroundColor3 == Color3.new(1, 0, 0) or (v:IsA("ImageLabel") and v.ImageColor3 == Color3.new(1, 0, 0)) then 
+                    ptr = v
+                elseif v.BackgroundColor3 == Color3.new(1, 1, 1) or v.Name:lower():find("perfect") then 
+                    tgt = v 
+                end
             end
         end
+        
         if ptr and tgt then
+            -- Logika Deteksi Frame-by-Frame (Sangat Presisi)
             if ptr.Rotation ~= 0 then
-                if math.abs((ptr.Rotation % 360) - (tgt.Rotation % 360)) < 7 then
+                local diff = math.abs((ptr.Rotation % 360) - (tgt.Rotation % 360))
+                if diff < 8 then -- Peningkatan toleransi deteksi rotasi
                     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                    task.wait(0.01); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game); task.wait(0.6)
+                    task.wait(0.01); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                    task.wait(0.5)
                 end
             else
                 local pX = ptr.AbsolutePosition.X + (ptr.AbsoluteSize.X / 2)
-                if pX >= tgt.AbsolutePosition.X and pX <= (tgt.AbsolutePosition.X + tgt.AbsoluteSize.X) then
+                local tX = tgt.AbsolutePosition.X
+                local tW = tgt.AbsoluteSize.X
+                if pX >= (tX - 2) and pX <= (tX + tW + 2) then
                     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                    task.wait(0.01); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game); task.wait(0.6)
+                    task.wait(0.01); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                    task.wait(0.5)
                 end
             end
         end
     end
 end)
 
--- --- [FIXED ESP: NO OUTLINE] ---
+-- --- [WALLHACK: NO OUTLINE] ---
 WhBtn.MouseButton1Click:Connect(function()
     for _, p in pairs(game.Players:GetPlayers()) do
         if p ~= lp and p.Character then
             local hl = p.Character:FindFirstChild("AdiESP") or Instance.new("Highlight", p.Character)
-            hl.Name = "AdiESP"
-            hl.OutlineTransparency = 1 -- MENGHILANGKAN GARIS PINGGIR
+            hl.Name = "AdiESP"; hl.OutlineTransparency = 1 
             local isKiller = false
             if p.Team then
                 local tn = p.Team.Name:lower()
@@ -188,37 +196,31 @@ WhBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- --- [GEN ESP WITH PERCENTAGE & NO OUTLINE] ---
+-- --- [GEN ESP: COLOR LOGIC (YELLOW -> GREEN)] ---
 GenBtn.MouseButton1Click:Connect(function()
     for _, o in pairs(workspace:GetDescendants()) do
         if (o.Name:lower():find("generator") or o.Name:lower():find("computer")) and (o:IsA("Model") or o:IsA("BasePart")) then
-            -- 1. Highlight Tanpa Outline
             local h = o:FindFirstChild("GenESP") or Instance.new("Highlight", o)
-            h.Name = "GenESP"; h.FillColor = Color3.new(1, 1, 0); h.OutlineTransparency = 1; h.Enabled = true
+            h.Name = "GenESP"; h.OutlineTransparency = 1; h.Enabled = true
             
-            -- 2. Persentase Label
-            if not o:FindFirstChild("GenLabel") then
-                local bGui = Instance.new("BillboardGui", o)
-                bGui.Name = "GenLabel"; bGui.Size = UDim2.new(0, 100, 0, 50); bGui.AlwaysOnTop = true; bGui.ExtentsOffset = Vector3.new(0, 3, 0)
-                local txt = Instance.new("TextLabel", bGui)
-                txt.Size = UDim2.new(1, 0, 1, 0); txt.BackgroundTransparency = 1; txt.TextColor3 = Color3.new(1, 1, 0); txt.Font = Enum.Font.SourceSansBold; txt.TextSize = 18
-                
-                -- Loop Update Persentase
-                task.spawn(function()
-                    while h.Enabled do
-                        local prog = o:FindFirstChild("Progress") or o:FindFirstChild("Value") or o:FindFirstChild("Completion")
-                        local percent = prog and math.floor(prog.Value) or 0
-                        txt.Text = "GEN - "..percent.."%"
-                        task.wait(1)
+            -- Monitor Progres secara Real-Time
+            task.spawn(function()
+                while h.Enabled do
+                    local prog = o:FindFirstChild("Progress") or o:FindFirstChild("Value") or o:FindFirstChild("Completion")
+                    if prog and prog.Value >= 100 then
+                        h.FillColor = Color3.new(0, 1, 0) -- Hijau jika selesai
+                    else
+                        h.FillColor = Color3.new(1, 1, 0) -- Kuning jika belum
                     end
-                end)
-            end
+                    task.wait(1)
+                end
+            end)
         end
     end
 end)
 
+-- --- [CROSSHAIR & EXIT] ---
 local dot = Instance.new("Frame", ScreenGui)
 dot.Size = UDim2.new(0, 6, 0, 6); dot.Position = UDim2.new(0.5, -3, 0.5, -3); dot.BackgroundColor3 = Color3.new(1,0,0); dot.Visible = false; Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
 CrBtn.MouseButton1Click:Connect(function() dot.Visible = not dot.Visible end)
-
 ExitBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
