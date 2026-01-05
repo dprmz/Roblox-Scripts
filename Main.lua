@@ -1,37 +1,43 @@
--- [[ ADI PROJECT - V14 ULTIMATE STABLE ]] --
+-- [[ ADI PROJECT - V15 ULTRA-STABLE ]] --
 
--- 1. DEEP LOADING GUARD (Anti Black Screen)
+-- 1. DETEKSI LOADING SCREEN GAME (SOLUSI BLACKSCREEN)
 if not game:IsLoaded() then
     game.Loaded:Wait()
 end
 
--- Menunggu hingga karakter benar-benar muncul di dunia game
-local players = game:GetService("Players")
-local lp = players.LocalPlayer
-repeat task.wait(0.5) until lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+-- Cari LoadingGui bawaan game jika ada dan tunggu sampai hilang
+local lp = game:GetService("Players").LocalPlayer
+local pGui = lp:WaitForChild("PlayerGui")
 
--- Jeda tambahan 5 detik untuk memastikan transisi map selesai total
-task.wait(5)
+local function waitForLoadingToFinish()
+    -- Cek jika ada ScreenGui yang namanya mengandung "Loading" atau "Intro"
+    for _, gui in pairs(pGui:GetChildren()) do
+        if gui:IsA("ScreenGui") and (gui.Name:lower():find("load") or gui.Name:lower():find("intro")) then
+            repeat task.wait(1) until not gui.Enabled or not gui.Parent
+        end
+    end
+end
 
+waitForLoadingToFinish()
+task.wait(7) -- Jeda "Napas" Engine (Sangat Penting)
+
+-- 2. KONFIGURASI SERVICE
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
--- 2. SAFE GUI INJECTION
+-- 3. PEMBUATAN UI SECARA BERTAHAP (ASYNC)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AdiMenuV14"
--- Gunakan pcall agar jika gagal pasang, tidak membuat game crash
-pcall(function()
-    if gethui then
-        ScreenGui.Parent = gethui() -- Executor Modern
-    elseif game:GetService("CoreGui"):FindFirstChild("RobloxGui") then
-        ScreenGui.Parent = game:GetService("CoreGui") -- Executor Standard
-    else
-        ScreenGui.Parent = lp:WaitForChild("PlayerGui") -- Fallback
-    end
-end)
+ScreenGui.Name = "AdiV15_Stable"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 999
 
--- 3. SETUP FRAME UTAMA
+-- Coba pasang UI di CoreGui agar tidak bentrok dengan PlayerGui game
+local success, err = pcall(function()
+    if gethui then ScreenGui.Parent = gethui()
+    elseif syn and syn.protect_gui then syn.protect_gui(ScreenGui); ScreenGui.Parent = game:GetService("CoreGui")
+    else ScreenGui.Parent = pGui end
+end)
+
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -40,12 +46,12 @@ MainFrame.Position = UDim2.new(0.5, -125, 0.5, -200)
 MainFrame.Size = UDim2.new(0, 260, 0, 450)
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.Visible = true -- Menu muncul setelah loading aman
 
-local MainCorner = Instance.new("UICorner", MainFrame)
-MainCorner.CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Text = "ADI MENU PRO V14"
+Title.Text = "ADI MENU PRO V15"
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Title.TextColor3 = Color3.new(1, 1, 1)
@@ -53,22 +59,12 @@ Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 18
 Instance.new("UICorner", Title)
 
--- --- [MOUSE FIX LOGIC] ---
+-- --- [MOUSE & MOVEMENT FIX] ---
 local menuOpen = true
-
-local function UpdateMouseState()
-    if menuOpen then
-        UserInputService.MouseIconEnabled = true
-        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-    else
-        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-    end
-end
-
--- Paksa kursor bisa gerak setiap frame
 RunService.RenderStepped:Connect(function()
     if menuOpen and MainFrame.Visible then
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        UserInputService.MouseIconEnabled = true
     end
 end)
 
@@ -76,92 +72,58 @@ UserInputService.InputBegan:Connect(function(input, gp)
     if not gp and input.KeyCode == Enum.KeyCode.LeftControl then
         menuOpen = not menuOpen
         MainFrame.Visible = menuOpen
-        UpdateMouseState()
     end
 end)
 
--- --- [SLIDER BUILDER] ---
-local function createSlider(titleText, labelText, posY, color)
-    local title = Instance.new("TextLabel", MainFrame)
-    title.Text = titleText
-    title.Size = UDim2.new(1, 0, 0, 20)
-    title.Position = UDim2.new(0, 0, 0, posY)
-    title.BackgroundTransparency = 1
-    title.TextColor3 = Color3.fromRGB(180, 180, 180)
-    title.TextSize = 12
-
-    local label = Instance.new("TextLabel", MainFrame)
-    label.Text = labelText
-    label.Size = UDim2.new(1, 0, 0, 20)
-    label.Position = UDim2.new(0, 0, 0, posY + 15)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.Font = Enum.Font.SourceSansBold
-
+-- --- [UI BUILDER: SLIDERS] ---
+local function createSlider(titleT, labelT, posY, color)
+    local t = Instance.new("TextLabel", MainFrame)
+    t.Text = titleT; t.Size = UDim2.new(1,0,0,20); t.Position = UDim2.new(0,0,0,posY); t.BackgroundTransparency = 1; t.TextColor3 = Color3.fromRGB(180,180,180); t.TextSize = 12
+    local l = Instance.new("TextLabel", MainFrame)
+    l.Text = labelT; l.Size = UDim2.new(1,0,0,20); l.Position = UDim2.new(0,0,0,posY+15); l.BackgroundTransparency = 1; l.TextColor3 = Color3.new(1,1,1); l.Font = Enum.Font.SourceSansBold
     local bg = Instance.new("Frame", MainFrame)
-    bg.Size = UDim2.new(0.8, 0, 0, 6)
-    bg.Position = UDim2.new(0.1, 0, 0, posY + 42)
-    bg.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    bg.BorderSizePixel = 0
-    Instance.new("UICorner", bg)
-
+    bg.Size = UDim2.new(0.8,0,0,6); bg.Position = UDim2.new(0.1,0,0,posY+42); bg.BackgroundColor3 = Color3.fromRGB(45,45,45); bg.BorderSizePixel = 0; Instance.new("UICorner", bg)
     local btn = Instance.new("TextButton", bg)
-    btn.Size = UDim2.new(0, 12, 2.5, 0)
-    btn.Position = UDim2.new(0, 0, -0.7, 0)
-    btn.Text = ""
-    btn.BackgroundColor3 = color
-    Instance.new("UICorner", btn)
-
-    return btn, label, bg
+    btn.Size = UDim2.new(0,12,2.5,0); btn.Position = UDim2.new(0,0,-0.7,0); btn.Text = ""; btn.BackgroundColor3 = color; Instance.new("UICorner", btn)
+    return btn, l, bg
 end
 
-local SpdBtn, SpdLabel, SpdBg = createSlider("WalkSpeed Adjuster", "Speed: 16", 45, Color3.fromRGB(0, 170, 255))
-local HitBtn, HitLabel, HitBg = createSlider("Hitbox Extender", "Size: 2", 105, Color3.fromRGB(255, 50, 50))
+local SpdBtn, SpdL, SpdBg = createSlider("WalkSpeed Adjuster", "Speed: 16", 45, Color3.fromRGB(0, 170, 255))
+local HitBtn, HitL, HitBg = createSlider("Hitbox Extender", "Size: 2", 105, Color3.fromRGB(255, 50, 50))
 
-local dragSpd, dragHit = false, false
-SpdBtn.MouseButton1Down:Connect(function() dragSpd = true end)
-HitBtn.MouseButton1Down:Connect(function() dragHit = true end)
-
-UserInputService.InputEnded:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 then dragSpd, dragHit = false, false end
-end)
+-- Logic Slider (Optimized)
+local dS, dH = false, false
+SpdBtn.MouseButton1Down:Connect(function() dS = true end)
+HitBtn.MouseButton1Down:Connect(function() dH = true end)
+UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dS, dH = false, false end end)
 
 RunService.RenderStepped:Connect(function()
     local mX = UserInputService:GetMouseLocation().X
-    if dragSpd then
+    if dS then
         local rX = math.clamp((mX - SpdBg.AbsolutePosition.X) / SpdBg.AbsoluteSize.X, 0, 1)
         SpdBtn.Position = UDim2.new(rX, -6, -0.7, 0)
         local val = 16 + (rX * 184)
-        if lp.Character and lp.Character:FindFirstChild("Humanoid") then
-            lp.Character.Humanoid.WalkSpeed = val
-            SpdLabel.Text = "Speed: " .. math.floor(val)
-        end
+        if lp.Character and lp.Character:FindFirstChild("Humanoid") then lp.Character.Humanoid.WalkSpeed = val; SpdL.Text = "Speed: "..math.floor(val) end
     end
-    if dragHit then
+    if dH then
         local rX = math.clamp((mX - HitBg.AbsolutePosition.X) / HitBg.AbsoluteSize.X, 0, 1)
         HitBtn.Position = UDim2.new(rX, -6, -0.7, 0)
         local size = math.floor(2 + (rX * 48))
-        for _, p in pairs(players:GetPlayers()) do
+        for _, p in pairs(game.Players:GetPlayers()) do
             if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                 p.Character.HumanoidRootPart.Size = Vector3.new(size, size, size)
                 p.Character.HumanoidRootPart.CanCollide = false
             end
         end
-        HitLabel.Text = "Size: " .. size
+        HitL.Text = "Size: "..size
     end
 end)
 
--- --- [BUTTONS] ---
-local function createBtn(text, pos, color)
-    local btn = Instance.new("TextButton", MainFrame)
-    btn.Text = text
-    btn.Size = UDim2.new(0.8, 0, 0, 32)
-    btn.Position = UDim2.new(0.1, 0, 0, pos)
-    btn.BackgroundColor3 = color
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.SourceSansBold
-    Instance.new("UICorner", btn)
-    return btn
+-- --- [UI BUILDER: BUTTONS] ---
+local function createBtn(txt, pos, col)
+    local b = Instance.new("TextButton", MainFrame)
+    b.Text = txt; b.Size = UDim2.new(0.8,0,0,32); b.Position = UDim2.new(0.1,0,0,pos); b.BackgroundColor3 = col; b.TextColor3 = Color3.new(1,1,1); b.Font = Enum.Font.SourceSansBold; b.BorderSizePixel = 0; Instance.new("UICorner", b)
+    return b
 end
 
 local WhBtn = createBtn("Wallhack Player", 185, Color3.fromRGB(70, 0, 130))
@@ -170,7 +132,7 @@ local VisBtn = createBtn("Visual Hitbox: OFF", 265, Color3.fromRGB(140, 0, 0))
 local CrBtn = createBtn("Toggle Crosshair", 305, Color3.fromRGB(50, 50, 50))
 local ScBtn = createBtn("Auto Skillcheck: OFF", 345, Color3.fromRGB(140, 0, 0))
 
--- LOGIC FITUR
+-- Fitur Logic (Visuals & Skillcheck)
 local vE = false
 VisBtn.MouseButton1Click:Connect(function()
     vE = not vE
@@ -179,31 +141,23 @@ VisBtn.MouseButton1Click:Connect(function()
 end)
 
 RunService.Heartbeat:Connect(function()
-    for _, p in pairs(players:GetPlayers()) do
+    for _, p in pairs(game.Players:GetPlayers()) do
         if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local hrp = p.Character.HumanoidRootPart
             local s = hrp:FindFirstChild("AdiVisual")
             if vE then
-                if not s then
-                    s = Instance.new("SelectionBox", hrp)
-                    s.Name = "AdiVisual"
-                    s.LineThickness = 0.05
-                    s.Color3 = Color3.new(1, 0, 0)
-                    s.Adornee = hrp
-                end
+                if not s then s = Instance.new("SelectionBox", hrp); s.Name = "AdiVisual"; s.LineThickness = 0.05; s.Color3 = Color3.new(1,0,0); s.Adornee = hrp end
             elseif s then s:Destroy() end
         end
     end
 end)
 
+-- Wallhack & Generator ESP tetap sama
 WhBtn.MouseButton1Click:Connect(function()
-    for _, p in pairs(players:GetPlayers()) do
+    for _, p in pairs(game.Players:GetPlayers()) do
         if p ~= lp and p.Character then
             local hl = p.Character:FindFirstChild("AdiESP") or Instance.new("Highlight", p.Character)
-            hl.Name = "AdiESP"
-            local isKiller = (p.Team and (p.Team.Name:lower():find("killer") or p.Team.Name:lower():find("murder")))
-            hl.FillColor = isKiller and Color3.new(1,0,0) or Color3.new(0, 0.6, 1)
-            hl.Enabled = true
+            hl.Name = "AdiESP"; hl.FillColor = (p.Team and p.Team.Name:lower():find("killer")) and Color3.new(1,0,0) or Color3.new(0, 0.6, 1); hl.Enabled = true
         end
     end
 end)
@@ -211,22 +165,12 @@ end)
 GenBtn.MouseButton1Click:Connect(function()
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj.Name:lower():find("generator") and (obj:IsA("Model") or obj:IsA("BasePart")) then
-            local hl = obj:FindFirstChild("GenESP") or Instance.new("Highlight", obj)
-            hl.Name = "GenESP"
-            hl.FillColor = Color3.fromRGB(255, 255, 0)
-            hl.Enabled = true
+            local hl = obj:FindFirstChild("GenESP") or Instance.new("Highlight", obj); hl.Name = "GenESP"; hl.FillColor = Color3.new(1, 1, 0); hl.Enabled = true
         end
     end
 end)
 
-local dot = Instance.new("Frame", ScreenGui)
-dot.Size = UDim2.new(0, 4, 0, 4)
-dot.Position = UDim2.new(0.5, -2, 0.5, -2)
-dot.BackgroundColor3 = Color3.new(1, 0, 0)
-dot.Visible = false
-Instance.new("UICorner", dot)
-CrBtn.MouseButton1Click:Connect(function() dot.Visible = not dot.Visible end)
-
+-- Skillcheck logic
 local aS = false
 ScBtn.MouseButton1Click:Connect(function()
     aS = not aS
@@ -236,19 +180,17 @@ end)
 
 RunService.RenderStepped:Connect(function()
     if not aS then return end
-    local gui = lp.PlayerGui:FindFirstChild("SkillCheck") or lp.PlayerGui:FindFirstChild("ActionUI")
+    local gui = pGui:FindFirstChild("SkillCheck") or pGui:FindFirstChild("ActionUI")
     if gui and gui.Visible then
-        local bar = gui:FindFirstChild("Bar")
-        local zone = gui:FindFirstChild("PerfectZone") or gui:FindFirstChild("SuccessZone")
+        local bar = gui:FindFirstChild("Bar"); local zone = gui:FindFirstChild("PerfectZone") or gui:FindFirstChild("SuccessZone")
         if bar and zone then
             local bP, zS = bar.AbsolutePosition.X, zone.AbsolutePosition.X
             if bP >= zS and bP <= (zS + zone.AbsoluteSize.X) then
                 game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                task.wait(0.05)
-                game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                task.wait(0.05); game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.Space, false, game)
             end
         end
     end
 end)
 
-print("V14 LOADED: ANTI-BLACKSCREEN ACTIVE")
+warn("V15 READY - Loading Screen Guard Enabled")
