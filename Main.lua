@@ -138,34 +138,71 @@ GenBtn.MouseButton1Click:Connect(function()
     print("[ ADI ] Generator ESP Activated")
 end)
 
--- --- FITUR KILLER HITBOX ---
+-- --- [ BAGIAN HITBOX SLIDER ] ---
+-- 1. Label Informasi
 local HitboxLabel = Instance.new("TextLabel", MainFrame)
-HitboxLabel.Text = "Hitbox: 2 (100%)"
+HitboxLabel.Text = "Hitbox Size: 2 (100%)"
 HitboxLabel.Size = UDim2.new(1, 0, 0, 20)
-HitboxLabel.Position = UDim2.new(0, 0, 0, 210)
+HitboxLabel.Position = UDim2.new(0, 0, 0, 100) -- Sesuaikan posisi Y
 HitboxLabel.BackgroundTransparency = 1
 HitboxLabel.TextColor3 = Color3.new(1, 1, 1)
+HitboxLabel.Font = Enum.Font.SourceSans
 
-local HitboxInput = Instance.new("TextBox", MainFrame)
-HitboxInput.Size = UDim2.new(0.8, 0, 0, 25)
-HitboxInput.Position = UDim2.new(0.1, 0, 0, 235)
-HitboxInput.PlaceholderText = "Set Hitbox (ex: 15)"
-HitboxInput.Text = "2"
-HitboxInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-HitboxInput.TextColor3 = Color3.new(1, 1, 1)
+-- 2. Background Slider (Garis)
+local SliderHitBg = Instance.new("Frame", MainFrame)
+SliderHitBg.Size = UDim2.new(0.8, 0, 0, 8)
+SliderHitBg.Position = UDim2.new(0.1, 0, 0, 125) -- Sesuaikan posisi Y
+SliderHitBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SliderHitBg.BorderSizePixel = 0
 
-local function extendHitbox(s)
-    local size = tonumber(s) or 2
-    for _, p in pairs(players:GetPlayers()) do
-        if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+-- 3. Tombol Geser (Knob)
+local SliderHitBtn = Instance.new("TextButton", SliderHitBg)
+SliderHitBtn.Size = UDim2.new(0, 15, 2, 0)
+SliderHitBtn.Position = UDim2.new(0, 0, -0.5, 0)
+SliderHitBtn.Text = ""
+SliderHitBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50) -- Warna Merah
+SliderHitBtn.BorderSizePixel = 0
+
+-- Fungsi untuk mengubah ukuran Hitbox semua pemain
+local function setHitbox(v)
+    local size = math.floor(v)
+    for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+        if p ~= game:GetService("Players").LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             p.Character.HumanoidRootPart.Size = Vector3.new(size, size, size)
             p.Character.HumanoidRootPart.CanCollide = false
+            p.Character.HumanoidRootPart.Transparency = 0.7 -- Opsional: agar terlihat perubahannya
         end
     end
-    HitboxLabel.Text = "Hitbox: " .. size .. " (" .. math.floor((size/2)*100) .. "%)"
+    HitboxLabel.Text = "Hitbox Size: " .. size .. " (" .. math.floor((size/2)*100) .. "%)"
 end
-HitboxInput.FocusLost:Connect(function(ep) if ep then extendHitbox(HitboxInput.Text) end end)
 
+-- Logika Geser (Dragging)
+local draggingHit = false
+local UIS = game:GetService("UserInputService")
+
+SliderHitBtn.MouseButton1Down:Connect(function()
+    draggingHit = true
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingHit = false
+    end
+end)
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if draggingHit then
+        local mouseX = UIS:GetMouseLocation().X
+        local relativeX = math.clamp((mouseX - SliderHitBg.AbsolutePosition.X) / SliderHitBg.AbsoluteSize.X, 0, 1)
+        
+        -- Update posisi tombol slider
+        SliderHitBtn.Position = UDim2.new(relativeX, -7, -0.5, 0)
+        
+        -- Hitung ukuran: Min 2, Max 50
+        local newSize = 2 + (relativeX * 48)
+        setHitbox(newSize)
+    end
+end)
 -- --- VISUAL HITBOX ---
 local VisualBtn = Instance.new("TextButton", MainFrame)
 VisualBtn.Text = "Visual Hitbox: OFF"
