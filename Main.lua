@@ -110,40 +110,57 @@ WhBtn.MouseButton1Click:Connect(function()
             -- Cari atau buat Highlight
             local hl = p.Character:FindFirstChild("AdiESP") or Instance.new("Highlight", p.Character)
             hl.Name = "AdiESP"
-            hl.OutlineColor = Color3.new(1, 1, 1) -- Garis tepi putih
-            hl.FillTransparency = 0.5
+            hl.OutlineColor = Color3.new(1, 1, 1)
+            hl.FillTransparency = 0.4
             
-            -- --- LOGIKA PENENTUAN WARNA ---
+            -- --- LOGIKA DETEKSI KILLER SUPER KUAT ---
             local isKiller = false
             
-            -- Cek berdasarkan TeamColor (Cara 1)
-            if p.TeamColor == BrickColor.new("Really red") or p.Team.Name:lower():find("killer") then
-                isKiller = true
+            -- 1. Cek dari Team (Nama atau Warna)
+            if p.Team then
+                local teamName = p.Team.Name:lower()
+                if teamName:find("killer") or teamName:find("murder") or teamName:find("slasher") or teamName:find("death") then
+                    isKiller = true
+                end
             end
             
-            -- Cek berdasarkan Tool/Senjata (Cara 2: Jika killer pegang pisau/senjata khusus)
-            if p.Backpack:FindFirstChild("Knife") or (p.Character and p.Character:FindFirstChild("Knife")) then
+            -- 2. Cek dari Tool/Senjata (Paling Akurat untuk game DBD/Violence District)
+            -- Kita cek apakah mereka punya benda yang namanya sering dipakai senjata
+            local function checkTools(location)
+                for _, item in pairs(location:GetChildren()) do
+                    if item:IsA("Tool") then
+                        local n = item.Name:lower()
+                        if n:find("knife") or n:find("sword") or n:find("machete") or n:find("weapon") or n:find("bat") or n:find("hammer") then
+                            return true
+                        end
+                    end
+                end
+                return false
+            end
+
+            if checkTools(p.Backpack) or (p.Character and checkTools(p.Character)) then
                 isKiller = true
             end
 
-            -- Cek berdasarkan Nama Character (Cara 3: Jika di map tersebut Killer punya nama model khusus)
-            if p.Character:FindFirstChild("KillerConfig") or p.Character.Name == "Killer" then
+            -- 3. Cek Atribut Khusus (Beberapa game menggunakan ini)
+            if p:GetAttribute("Role") == "Killer" or p:GetAttribute("IsKiller") == true then
                 isKiller = true
             end
 
-            -- Terpakan Warna
+            -- --- TERAPKAN WARNA ---
             if isKiller then
-                hl.FillColor = Color3.fromRGB(255, 0, 0) -- MERAH murni untuk Killer
-                print("[ ADI ] Killer Terdeteksi: " .. p.Name)
+                hl.FillColor = Color3.fromRGB(255, 0, 0) -- MERAH MURNI
+                hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                print("[ ADI ] " .. p.Name .. " terdeteksi sebagai KILLER")
             else
-                hl.FillColor = Color3.fromRGB(0, 150, 255) -- BIRU cerah untuk Survivor
+                hl.FillColor = Color3.fromRGB(0, 150, 255) -- BIRU untuk Survivor
+                hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
             end
             
             hl.Enabled = true
         end
     end
 end)
-
 -- --- 4. FITUR KILLER HITBOX (EXPAND) ---
 local HitboxLabel = Instance.new("TextLabel", MainFrame)
 HitboxLabel.Text = "Killer Hitbox: 2 (Default)"
