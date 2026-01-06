@@ -1,55 +1,50 @@
--- [[ ADI PROJECT - V34 ULTIMATE COLOR DETECTOR ]] --
+-- [[ ADI PROJECT - V35 HYBRID EDITION (ICEWARE LOADED) ]] --
 
-if not game:IsLoaded() then game.Loaded:Wait() end
+-- 1. LOAD EXTERNAL PERFECT SCRIPT (ICEWARE)
+-- Kita panggil script yang kamu suka karena fiturnya sudah matang
+task.spawn(function()
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Iceware-RBLX/Roblox/refs/heads/main/loader.lua",true))()
+    end)
+end)
+
+-- 2. ADI MENU CUSTOM (FITUR TAMBAHAN)
 local lp = game:GetService("Players").LocalPlayer
-local pGui = lp:WaitForChild("PlayerGui")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local VIM = game:GetService("VirtualInputManager")
 
--- 1. UI SETUP
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AdiV34_Final"
-ScreenGui.ResetOnSpawn = false
+ScreenGui.Name = "AdiV35_Hybrid"
 pcall(function() ScreenGui.Parent = gethui() or game:GetService("CoreGui") end)
 
 local Main = Instance.new("Frame", ScreenGui)
-Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-Main.Position = UDim2.new(0.5, -135, 0.5, -250)
-Main.Size = UDim2.new(0, 270, 0, 500)
-Main.Active = true
-Main.Draggable = true
+Main.Size = UDim2.new(0, 250, 0, 300)
+Main.Position = UDim2.new(0, 50, 0.5, -150) -- Di samping kiri agar tidak menumpuk menu Iceware
+Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Main.Active = true; Main.Draggable = true
 Instance.new("UICorner", Main)
 
 local Title = Instance.new("TextLabel", Main)
-Title.Text = "ADI MENU PRO V34"; Title.Size = UDim2.new(1, 0, 0, 40)
-Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30); Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Font = Enum.Font.SourceSansBold; Title.TextSize = 20
+Title.Text = "ADI EXTRA FEATURES"; Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40); Title.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", Title)
 
--- --- [BUILDER HELPERS] ---
-local function createBtn(txt, pos, col)
-    local b = Instance.new("TextButton", Main)
-    b.Text = txt; b.Size = UDim2.new(0.85, 0, 0, 38); b.Position = UDim2.new(0.075, 0, 0, pos)
-    b.BackgroundColor3 = col; b.TextColor3 = Color3.new(1, 1, 1)
-    b.Font = Enum.Font.SourceSansBold; b.TextSize = 16
-    Instance.new("UICorner", b); return b
-end
+-- --- [FITUR TAMBAHAN YANG TIDAK ADA DI ICEWARE] ---
 
-local function createSlider(title, pos, col)
+local function createSlider(title, pos)
     local t = Instance.new("TextLabel", Main)
-    t.Text = title; t.Size = UDim2.new(1,0,0,20); t.Position = UDim2.new(0,0,0,pos); t.BackgroundTransparency = 1; t.TextColor3 = Color3.new(0.8,0.8,0.8); t.TextSize = 14
+    t.Text = title; t.Size = UDim2.new(1,0,0,20); t.Position = UDim2.new(0,0,0,pos); t.TextColor3 = Color3.new(1,1,1); t.BackgroundTransparency = 1
     local bg = Instance.new("Frame", Main)
-    bg.Size = UDim2.new(0.8,0,0,6); bg.Position = UDim2.new(0.1,0,0,pos+25); bg.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    bg.Size = UDim2.new(0.8,0,0,5); bg.Position = UDim2.new(0.1,0,0,pos+25); bg.BackgroundColor3 = Color3.new(0.3,0.3,0.3)
     local btn = Instance.new("TextButton", bg)
-    btn.Size = UDim2.new(0,14,2.5,0); btn.Position = UDim2.new(0,0,-0.7,0); btn.Text = ""; btn.BackgroundColor3 = col; Instance.new("UICorner", btn)
+    btn.Size = UDim2.new(0,10,2,0); btn.Position = UDim2.new(0,0,-0.5,0); btn.Text = ""; btn.BackgroundColor3 = Color3.new(0,0.6,1)
     return btn, bg
 end
 
--- --- [SLIDERS & FEATURES] ---
-local sSpd, bSpd = createSlider("WalkSpeed Adjuster", 50, Color3.fromRGB(0, 150, 255))
-local sHit, bHit = createSlider("Hitbox Adjuster", 100, Color3.fromRGB(255, 50, 50))
+local sSpd, bSpd = createSlider("WalkSpeed", 60)
+local sHit, bHit = createSlider("Hitbox Player", 120)
 local dS, dH = false, false
+
 sSpd.MouseButton1Down:Connect(function() dS = true end)
 sHit.MouseButton1Down:Connect(function() dH = true end)
 UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dS, dH = false end end)
@@ -58,117 +53,20 @@ RunService.RenderStepped:Connect(function()
     local mX = UIS:GetMouseLocation().X
     if dS then
         local r = math.clamp((mX - bSpd.AbsolutePosition.X) / bSpd.AbsoluteSize.X, 0, 1)
-        sSpd.Position = UDim2.new(r, -7, -0.7, 0)
+        sSpd.Position = UDim2.new(r, -5, -0.5, 0)
         if lp.Character and lp.Character:FindFirstChild("Humanoid") then lp.Character.Humanoid.WalkSpeed = 16 + (r * 150) end
     elseif dH then
         local r = math.clamp((mX - bHit.AbsolutePosition.X) / bHit.AbsoluteSize.X, 0, 1)
-        sHit.Position = UDim2.new(r, -7, -0.7, 0)
-        local sz = 2 + (r * 48)
+        sHit.Position = UDim2.new(r, -5, -0.5, 0)
         for _, p in pairs(game.Players:GetPlayers()) do
             if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                p.Character.HumanoidRootPart.Size = Vector3.new(sz, sz, sz); p.Character.HumanoidRootPart.CanCollide = false
+                p.Character.HumanoidRootPart.Size = Vector3.new(2 + (r*48), 2 + (r*48), 2 + (r*48))
+                p.Character.HumanoidRootPart.CanCollide = false
             end
         end
     end
 end)
 
-local WhB = createBtn("Wallhack Player", 155, Color3.fromRGB(80, 0, 150))
-local GeB = createBtn("Generator ESP (Color Fix)", 200, Color3.fromRGB(150, 120, 0))
-local ViB = createBtn("Visual Hitbox Line: OFF", 245, Color3.fromRGB(140, 0, 0))
-local ScB = createBtn("AUTO PERFECT: OFF", 290, Color3.fromRGB(50, 50, 50))
-local CrB = createBtn("Toggle Crosshair", 335, Color3.fromRGB(50, 50, 50))
-createBtn("CLOSE SCRIPT", 440, Color3.fromRGB(180, 0, 0)).MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
-
--- --- [NEW: GENERATOR COLOR DETECTION FIX] ---
-GeB.MouseButton1Click:Connect(function()
-    for _, o in pairs(workspace:GetDescendants()) do
-        if (o.Name:lower():find("generator") or o.Name:lower():find("computer")) then
-            local h = o:FindFirstChild("GenESP") or Instance.new("Highlight", o)
-            h.Name = "GenESP"; h.OutlineTransparency = 1; h.Enabled = true
-            
-            task.spawn(function()
-                while h.Enabled and h.Parent do
-                    local isFinished = false
-                    -- SCAN SEMUA PART DI DALAM GENERATOR
-                    for _, part in pairs(o:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            -- Deteksi warna hijau murni (0, 255, 0) atau hijau neon
-                            -- Biasanya Color3.new(0, 1, 0)
-                            local c = part.Color
-                            if c.G > 0.8 and c.R < 0.2 and c.B < 0.2 then
-                                isFinished = true; break
-                            end
-                        end
-                    end
-                    h.FillColor = isFinished and Color3.new(0, 1, 0) or Color3.new(1, 1, 0)
-                    task.wait(1)
-                end
-            end)
-        end
-    end
-end)
-
--- --- [FIX: RADIAL PERFECT SKILLCHECK] ---
-local scOn = false
-ScB.MouseButton1Click:Connect(function()
-    scOn = not scOn; ScB.Text = scOn and "AUTO PERFECT: ON" or "AUTO PERFECT: OFF"
-    ScB.BackgroundColor3 = scOn and Color3.new(0, 0.5, 0) or Color3.new(0.2, 0.2, 0.2)
-end)
-
-RunService:BindToRenderStep("AdiPerfectV34", 100, function()
-    if not scOn then return end
-    local ui = pGui:FindFirstChild("SkillCheck") or pGui:FindFirstChild("ActionUI") or pGui:FindFirstChild("Minigame")
-    if ui and ui.Enabled then
-        local needle, white = nil, nil
-        for _, v in pairs(ui:GetDescendants()) do
-            if v:IsA("GuiObject") and v.Visible then
-                if v.BackgroundColor3 == Color3.new(1, 0, 0) or v.Name:lower():find("needle") then needle = v
-                elseif v.BackgroundColor3 == Color3.new(1, 1, 1) or v.Name:lower():find("perfect") then white = v end
-            end
-        end
-        if needle and white then
-            local nRot = needle.Rotation % 360
-            local wRot = white.Rotation % 360
-            local diff = math.abs(nRot - wRot)
-            -- Toleransi 12 derajat untuk rotasi cepat
-            if diff <= 12 or diff >= 348 then
-                VIM:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                task.wait(0.01); VIM:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-                task.wait(0.5)
-            end
-        end
-    end
-end)
-
--- --- [MISC LOGICS] ---
-WhB.MouseButton1Click:Connect(function()
-    for _, p in pairs(game.Players:GetPlayers()) do
-        if p ~= lp and p.Character then
-            local h = p.Character:FindFirstChild("AdiESP") or Instance.new("Highlight", p.Character)
-            h.Name = "AdiESP"; h.OutlineTransparency = 1; h.Enabled = true
-            h.FillColor = (p.Team and (p.Team.Name:lower():find("killer") or p.Team.Name:lower():find("beast"))) and Color3.new(1,0,0) or Color3.new(0,0.4,1)
-        end
-    end
-end)
-
-local visOn = false
-ViB.MouseButton1Click:Connect(function()
-    visOn = not visOn; ViB.Text = visOn and "Visual Hitbox Line: ON" or "Visual Hitbox Line: OFF"
-    ViB.BackgroundColor3 = visOn and Color3.new(0, 0.5, 0) or Color3.new(0.6, 0, 0)
-end)
-
-RunService.Heartbeat:Connect(function()
-    for _, p in pairs(game.Players:GetPlayers()) do
-        if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            local hrp = p.Character.HumanoidRootPart
-            local l = hrp:FindFirstChild("AdiVisual")
-            if visOn then
-                if not l then l = Instance.new("SelectionBox", hrp); l.Adornee = hrp; l.LineThickness = 0.05; l.Color3 = Color3.new(1,0,0); l.Name = "AdiVisual" end
-            elseif l then l:Destroy() end
-        end
-    end
-end)
-
-local dot = Instance.new("Frame", ScreenGui); dot.Size = UDim2.new(0,6,0,6); dot.Position = UDim2.new(0.5,-3,0.5,-3); dot.BackgroundColor3 = Color3.new(1,0,0); dot.Visible = false; Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
-CrB.MouseButton1Click:Connect(function() dot.Visible = not dot.Visible end)
-UIS.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.LeftControl then Main.Visible = not Main.Visible end end)
+local close = Instance.new("TextButton", Main)
+close.Text = "Close Adi Menu"; close.Size = UDim2.new(0.8,0,0,30); close.Position = UDim2.new(0.1,0,0,240); close.BackgroundColor3 = Color3.new(0.5,0,0)
+close.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
