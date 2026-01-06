@@ -1,4 +1,4 @@
--- [[ ADI PROJECT - V26 SUPER GOD MODE PRECISION ]] --
+-- [[ ADI PROJECT - V27 FINAL (GEN COLOR FIX & ALL FEATURES) ]] --
 
 if not game:IsLoaded() then game.Loaded:Wait() end
 local lp = game:GetService("Players").LocalPlayer
@@ -9,9 +9,9 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- 1. GUI OVERLAY SETUP
+-- 1. UI SETUP (ALWAYS ON TOP)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AdiMenu_V26_Final"
+ScreenGui.Name = "AdiMenu_V27_Final"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 2147483647 
 
@@ -30,14 +30,14 @@ MainFrame.Draggable = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Text = "ADI MENU PRO V26"
+Title.Text = "ADI MENU PRO V27"
 Title.Size = UDim2.new(1, 0, 0, 45)
 Title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold; Title.TextSize = 22
 Instance.new("UICorner", Title)
 
--- --- [MOUSE & TOGGLE LOGIC] ---
+-- --- [MOUSE & TOGGLE] ---
 local menuOpen = true
 RunService.RenderStepped:Connect(function()
     if menuOpen and MainFrame.Visible then
@@ -70,7 +70,7 @@ local function createBtn(txt, pos, col)
     return b
 end
 
--- --- [SLIDERS: SPEED & HITBOX] ---
+-- --- [FITUR: SPEED & HITBOX ADJUSTER] ---
 local SpdBtn, SpdL, SpdBg = createSlider("WalkSpeed Adjuster", "Speed: 16", 50, Color3.fromRGB(0, 170, 255))
 local HitBtn, HitL, HitBg = createSlider("Hitbox Adjuster", "Size: 2", 110, Color3.fromRGB(255, 50, 50))
 local dS, dH = false, false
@@ -103,13 +103,13 @@ end)
 
 -- --- [BUTTONS LIST] ---
 local WhBtn = createBtn("Wallhack Player", 175, Color3.fromRGB(70, 0, 130))
-local GenBtn = createBtn("ESP Generator (Yellow/Green)", 225, Color3.fromRGB(160, 120, 0))
+local GenBtn = createBtn("ESP Generator (Fix Color)", 225, Color3.fromRGB(160, 120, 0))
 local VisBtn = createBtn("Visual Hitbox Line: OFF", 275, Color3.fromRGB(140, 0, 0))
 local ScBtn = createBtn("AUTO PERFECT: OFF", 325, Color3.fromRGB(50, 50, 50))
 local CrBtn = createBtn("Toggle Crosshair", 375, Color3.fromRGB(50, 50, 50))
 local ExitBtn = createBtn("Close Script", 440, Color3.fromRGB(200, 0, 0))
 
--- --- [VISUAL LINE HITBOX] ---
+-- --- [VISUAL HITBOX LINE] ---
 local visualEnabled = false
 VisBtn.MouseButton1Click:Connect(function()
     visualEnabled = not visualEnabled
@@ -133,65 +133,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- --- [GOD MODE SKILLCHECK LOGIC (FIXED)] ---
-local autoSkill = false
-ScBtn.MouseButton1Click:Connect(function()
-    autoSkill = not autoSkill
-    ScBtn.Text = autoSkill and "AUTO PERFECT: ON" or "AUTO PERFECT: OFF"
-    ScBtn.BackgroundColor3 = autoSkill and Color3.fromRGB(0, 130, 0) or Color3.fromRGB(50, 50, 50)
-end)
-
--- Pengecekan super cepat menggunakan BindToRenderStep
-RunService:BindToRenderStep("AdiPerfectCheck", Enum.RenderPriority.Input.Value, function()
-    if not autoSkill then return end
-    
-    -- Cari UI Skillcheck (Mendukung banyak game sekaligus)
-    local sg = pGui:FindFirstChild("SkillCheck") or pGui:FindFirstChild("ActionUI") or pGui:FindFirstChild("TugOfWar") or pGui:FindFirstChild("Minigame")
-    if sg and sg.Enabled then
-        local needle = nil
-        local whiteZone = nil
-        
-        for _, v in pairs(sg:GetDescendants()) do
-            if v:IsA("GuiObject") and v.Visible then
-                -- Mendeteksi Jarum (Biasanya merah atau garis tipis bergerak)
-                if v.BackgroundColor3 == Color3.new(1, 0, 0) or v.Name:lower():find("needle") or v.Name:lower():find("pointer") then
-                    needle = v
-                -- Mendeteksi Zona Putih (Perfect)
-                elseif v.BackgroundColor3 == Color3.new(1, 1, 1) or v.Name:lower():find("perfect") or v.Name:lower():find("target") then
-                    whiteZone = v
-                end
-            end
-        end
-        
-        if needle and whiteZone then
-            -- LOGIKA ROTASI (Untuk Jarum Berputar)
-            local nRot = needle.Rotation % 360
-            local wRot = whiteZone.Rotation % 360
-            
-            -- Jika rotasi jarum masuk ke range zona putih (dengan kompensasi latency)
-            if math.abs(nRot - wRot) <= 12 then -- Toleransi 12 derajat untuk kompensasi gerak cepat
-                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                task.wait(0.01)
-                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-                task.wait(0.4) -- Delay cooldown agar tidak menekan terus menerus
-            end
-            
-            -- LOGIKA POSISI (Untuk Bar Mendatar)
-            local nX = needle.AbsolutePosition.X + (needle.AbsoluteSize.X / 2)
-            local wX = whiteZone.AbsolutePosition.X
-            local wW = whiteZone.AbsoluteSize.X
-            
-            if nX >= (wX - 5) and nX <= (wX + wW + 5) then
-                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                task.wait(0.01)
-                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-                task.wait(0.4)
-            end
-        end
-    end
-end)
-
--- --- [WALLHACK: NO OUTLINE] ---
+-- --- [ESP PLAYER: SURVIVOR BLUE, KILLER RED] ---
 WhBtn.MouseButton1Click:Connect(function()
     for _, p in pairs(game.Players:GetPlayers()) do
         if p ~= lp and p.Character then
@@ -208,7 +150,7 @@ WhBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- --- [GEN ESP: YELLOW -> GREEN LOGIC] ---
+-- --- [FIXED: GEN ESP COLOR LOGIC (YELLOW TO GREEN)] ---
 GenBtn.MouseButton1Click:Connect(function()
     for _, o in pairs(workspace:GetDescendants()) do
         if (o.Name:lower():find("generator") or o.Name:lower():find("computer")) and (o:IsA("Model") or o:IsA("BasePart")) then
@@ -217,16 +159,64 @@ GenBtn.MouseButton1Click:Connect(function()
             
             task.spawn(function()
                 while h.Enabled do
-                    -- Cek progres berdasarkan properti game yang umum
-                    local prog = o:FindFirstChild("Progress") or o:FindFirstChild("Value") or o:FindFirstChild("Completion") or o:FindFirstChild("Progres")
-                    if prog and (prog.Value >= 100 or prog.Value >= 1) then -- Berwarna hijau jika penuh
-                        h.FillColor = Color3.new(0, 1, 0) 
-                    else
-                        h.FillColor = Color3.new(1, 1, 0) 
+                    local isFinished = false
+                    -- Scan semua Value di dalam Generator untuk mencari progres
+                    for _, v in pairs(o:GetDescendants()) do
+                        if v:IsA("NumberValue") or v:IsA("IntValue") or v:IsA("StringValue") then
+                            local val = tonumber(v.Value)
+                            if val and (val >= 100 or (val >= 1 and val < 2)) then
+                                isFinished = true
+                                break
+                            end
+                        end
                     end
-                    task.wait(1)
+                    
+                    if isFinished then
+                        h.FillColor = Color3.new(0, 1, 0) -- Hijau
+                    else
+                        h.FillColor = Color3.new(1, 1, 0) -- Kuning
+                    end
+                    task.wait(1.5)
                 end
             end)
+        end
+    end
+end)
+
+-- --- [SKILLCHECK LOGIC (STABLE MODE)] ---
+local autoSkill = false
+ScBtn.MouseButton1Click:Connect(function()
+    autoSkill = not autoSkill
+    ScBtn.Text = autoSkill and "AUTO PERFECT: ON" or "AUTO PERFECT: OFF"
+    ScBtn.BackgroundColor3 = autoSkill and Color3.fromRGB(0, 130, 0) or Color3.fromRGB(50, 50, 50)
+end)
+
+RunService:BindToRenderStep("SkillCheckUpdate", 100, function()
+    if not autoSkill then return end
+    local sg = pGui:FindFirstChild("SkillCheck") or pGui:FindFirstChild("ActionUI")
+    if sg and sg.Enabled then
+        local ptr, tgt = nil, nil
+        for _, v in pairs(sg:GetDescendants()) do
+            if v:IsA("GuiObject") and v.Visible then
+                if v.BackgroundColor3 == Color3.new(1, 0, 0) or v.Name:lower():find("needle") then ptr = v
+                elseif v.BackgroundColor3 == Color3.new(1, 1, 1) or v.Name:lower():find("perfect") then tgt = v end
+            end
+        end
+        if ptr and tgt then
+            if ptr.Rotation ~= 0 then
+                if math.abs((ptr.Rotation % 360) - (tgt.Rotation % 360)) < 10 then
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                    task.wait(0.01); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                    task.wait(0.5)
+                end
+            else
+                local pX = ptr.AbsolutePosition.X + (ptr.AbsoluteSize.X / 2)
+                if pX >= tgt.AbsolutePosition.X and pX <= (tgt.AbsolutePosition.X + tgt.AbsoluteSize.X) then
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                    task.wait(0.01); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                    task.wait(0.5)
+                end
+            end
         end
     end
 end)
