@@ -1,4 +1,4 @@
--- [[ ADI PROJECT - V31 ALL FEATURES FIXED ]] --
+-- [[ ADI PROJECT - V33 IMAGE-BASED FIX ]] --
 
 if not game:IsLoaded() then game.Loaded:Wait() end
 local lp = game:GetService("Players").LocalPlayer
@@ -7,15 +7,14 @@ local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local VIM = game:GetService("VirtualInputManager")
 
--- 1. SETUP UI
+-- 1. UI SETUP
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AdiV31_Final"
+ScreenGui.Name = "AdiV33_Final"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 999999
 pcall(function() ScreenGui.Parent = gethui() or game:GetService("CoreGui") end)
 
 local Main = Instance.new("Frame", ScreenGui)
-Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Main.Position = UDim2.new(0.5, -135, 0.5, -250)
 Main.Size = UDim2.new(0, 270, 0, 500)
 Main.Active = true
@@ -23,26 +22,20 @@ Main.Draggable = true
 Instance.new("UICorner", Main)
 
 local Title = Instance.new("TextLabel", Main)
-Title.Text = "ADI MENU PRO V31"
+Title.Text = "ADI MENU PRO V33"
 Title.Size = UDim2.new(1, 0, 0, 40)
-Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 20
+Title.Font = Enum.Font.SourceSansBold; Title.TextSize = 20
 Instance.new("UICorner", Title)
 
--- --- [BUILDER HELPERS] ---
+-- --- [FUNGSI PEMBUAT TOMBOL & SLIDER] ---
 local function createBtn(txt, pos, col)
     local b = Instance.new("TextButton", Main)
-    b.Text = txt
-    b.Size = UDim2.new(0.85, 0, 0, 38)
-    b.Position = UDim2.new(0.075, 0, 0, pos)
-    b.BackgroundColor3 = col
-    b.TextColor3 = Color3.new(1, 1, 1)
-    b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 16
-    Instance.new("UICorner", b)
-    return b
+    b.Text = txt; b.Size = UDim2.new(0.85, 0, 0, 38); b.Position = UDim2.new(0.075, 0, 0, pos)
+    b.BackgroundColor3 = col; b.TextColor3 = Color3.new(1, 1, 1)
+    b.Font = Enum.Font.SourceSansBold; b.TextSize = 16
+    Instance.new("UICorner", b); return b
 end
 
 local function createSlider(title, pos, col)
@@ -55,11 +48,10 @@ local function createSlider(title, pos, col)
     return btn, bg
 end
 
--- --- [2 SLIDERS] ---
+-- --- [SLIDERS] ---
 local sSpd, bSpd = createSlider("WalkSpeed Adjuster", 50, Color3.fromRGB(0, 150, 255))
 local sHit, bHit = createSlider("Hitbox Adjuster", 100, Color3.fromRGB(255, 50, 50))
 local dS, dH = false, false
-
 sSpd.MouseButton1Down:Connect(function() dS = true end)
 sHit.MouseButton1Down:Connect(function() dH = true end)
 UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dS, dH = false end end)
@@ -76,26 +68,107 @@ RunService.RenderStepped:Connect(function()
         local sz = 2 + (r * 48)
         for _, p in pairs(game.Players:GetPlayers()) do
             if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                p.Character.HumanoidRootPart.Size = Vector3.new(sz, sz, sz)
-                p.Character.HumanoidRootPart.CanCollide = false
+                p.Character.HumanoidRootPart.Size = Vector3.new(sz, sz, sz); p.Character.HumanoidRootPart.CanCollide = false
             end
         end
     end
 end)
 
--- --- [6 BUTTONS] ---
+-- --- [BUTTONS] ---
 local WhB = createBtn("Wallhack Player", 155, Color3.fromRGB(80, 0, 150))
-local GeB = createBtn("Generator ESP (Yellow/Green)", 200, Color3.fromRGB(150, 120, 0))
+local GeB = createBtn("Generator ESP (Color Fix)", 200, Color3.fromRGB(160, 120, 0))
 local ViB = createBtn("Visual Hitbox Line: OFF", 245, Color3.fromRGB(140, 0, 0))
 local ScB = createBtn("AUTO PERFECT: OFF", 290, Color3.fromRGB(50, 50, 50))
 local CrB = createBtn("Toggle Crosshair", 335, Color3.fromRGB(50, 50, 50))
-local ExB = createBtn("CLOSE SCRIPT", 440, Color3.fromRGB(180, 0, 0))
+createBtn("CLOSE SCRIPT", 440, Color3.fromRGB(180, 0, 0)).MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
--- --- [LOGIC: VISUAL LINE] ---
+-- --- [FIX: GENERATOR COLOR DETECTION] ---
+GeB.MouseButton1Click:Connect(function()
+    for _, o in pairs(workspace:GetDescendants()) do
+        if (o.Name:lower():find("generator") or o.Name:lower():find("computer")) and (o:IsA("Model") or o:IsA("BasePart")) then
+            local h = o:FindFirstChild("GenESP") or Instance.new("Highlight", o)
+            h.Name = "GenESP"; h.OutlineTransparency = 1; h.Enabled = true
+            
+            task.spawn(function()
+                while h.Enabled do
+                    local isFinished = false
+                    -- Berdasarkan penjelasanmu: Lampu di bawah generator berubah jadi HIJAU jika selesai
+                    for _, light in pairs(o:GetDescendants()) do
+                        if light:IsA("BasePart") and light.Name:lower():find("light") then
+                            -- Jika lampu sudah berwarna hijau (atau mendekati hijau)
+                            if light.Color.G > 0.7 and light.Color.R < 0.3 then
+                                isFinished = true; break
+                            end
+                        end
+                    end
+                    h.FillColor = isFinished and Color3.new(0, 1, 0) or Color3.new(1, 1, 0)
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+end)
+
+-- --- [FIX: RADIAL PERFECT SKILLCHECK] ---
+local scOn = false
+ScB.MouseButton1Click:Connect(function()
+    scOn = not scOn
+    ScB.Text = scOn and "AUTO PERFECT: ON" or "AUTO PERFECT: OFF"
+    ScB.BackgroundColor3 = scOn and Color3.new(0, 0.5, 0) or Color3.new(0.2, 0.2, 0.2)
+end)
+
+RunService:BindToRenderStep("AdiPerfectV33", Enum.RenderPriority.Input.Value, function()
+    if not scOn then return end
+    -- Cek berbagai kemungkinan nama UI Skillcheck
+    local ui = pGui:FindFirstChild("SkillCheck") or pGui:FindFirstChild("ActionUI") or pGui:FindFirstChild("TugOfWar")
+    if ui and ui.Enabled then
+        local needle = nil
+        local whiteBar = nil
+        
+        -- Berdasarkan Gambar: Mencari Jarum Merah dan Bar Putih (Perfect Zone)
+        for _, v in pairs(ui:GetDescendants()) do
+            if v:IsA("GuiObject") and v.Visible then
+                -- Cari Jarum (biasanya ImageLabel merah atau tipis)
+                if v.Name:lower():find("needle") or v.Name:lower():find("pointer") or v.BackgroundColor3 == Color3.new(1,0,0) then
+                    needle = v
+                -- Cari Bar Putih (Perfect Zone)
+                elseif v.Name:lower():find("perfect") or v.Name:lower():find("target") or v.BackgroundColor3 == Color3.new(1,1,1) then
+                    whiteBar = v
+                end
+            end
+        end
+        
+        if needle and whiteBar then
+            -- Logika Melingkar (Rotation-based) sesuai gambar
+            local nRot = needle.Rotation % 360
+            local wRot = whiteBar.Rotation % 360
+            
+            -- Menghitung selisih rotasi dengan toleransi latency
+            local diff = math.abs(nRot - wRot)
+            if diff <= 10 or diff >= 350 then -- Toleransi 10 derajat
+                VIM:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                task.wait(0.01)
+                VIM:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                task.wait(0.5) -- Cooldown agar tidak double click
+            end
+        end
+    end
+end)
+
+-- --- [FITUR LAINNYA TETAP UTUH] ---
+WhB.MouseButton1Click:Connect(function()
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= lp and p.Character then
+            local h = p.Character:FindFirstChild("AdiESP") or Instance.new("Highlight", p.Character)
+            h.Name = "AdiESP"; h.OutlineTransparency = 1; h.Enabled = true
+            h.FillColor = (p.Team and (p.Team.Name:lower():find("killer") or p.Team.Name:lower():find("beast"))) and Color3.new(1,0,0) or Color3.new(0,0.4,1)
+        end
+    end
+end)
+
 local visOn = false
 ViB.MouseButton1Click:Connect(function()
-    visOn = not visOn
-    ViB.Text = visOn and "Visual Hitbox Line: ON" or "Visual Hitbox Line: OFF"
+    visOn = not visOn; ViB.Text = visOn and "Visual Hitbox Line: ON" or "Visual Hitbox Line: OFF"
     ViB.BackgroundColor3 = visOn and Color3.new(0, 0.5, 0) or Color3.new(0.6, 0, 0)
 end)
 
@@ -105,91 +178,13 @@ RunService.Heartbeat:Connect(function()
             local hrp = p.Character.HumanoidRootPart
             local l = hrp:FindFirstChild("AdiVisual")
             if visOn then
-                if not l then
-                    l = Instance.new("SelectionBox", hrp); l.Name = "AdiVisual"; l.Color3 = Color3.new(1, 0, 0); l.Adornee = hrp; l.LineThickness = 0.05
-                end
+                if not l then l = Instance.new("SelectionBox", hrp); l.Adornee = hrp; l.LineThickness = 0.05; l.Color3 = Color3.new(1,0,0); l.Name = "AdiVisual" end
             elseif l then l:Destroy() end
         end
     end
 end)
 
--- --- [LOGIC: WALLHACK PLAYER] ---
-WhB.MouseButton1Click:Connect(function()
-    for _, p in pairs(game.Players:GetPlayers()) do
-        if p ~= lp and p.Character then
-            local h = p.Character:FindFirstChild("AdiESP") or Instance.new("Highlight", p.Character)
-            h.Name = "AdiESP"; h.OutlineTransparency = 1
-            local k = false
-            if p.Team and (p.Team.Name:lower():find("killer") or p.Team.Name:lower():find("beast")) then k = true end
-            h.FillColor = k and Color3.new(1, 0, 0) or Color3.new(0, 0.4, 1)
-            h.Enabled = true
-        end
-    end
-end)
-
--- --- [LOGIC: GENERATOR YELLOW/GREEN] ---
-GeB.MouseButton1Click:Connect(function()
-    for _, o in pairs(workspace:GetDescendants()) do
-        if (o.Name:lower():find("generator") or o.Name:lower():find("computer")) and (o:IsA("Model") or o:IsA("BasePart")) then
-            local h = o:FindFirstChild("GenESP") or Instance.new("Highlight", o)
-            h.Name = "GenESP"; h.OutlineTransparency = 1; h.Enabled = true
-            
-            task.spawn(function()
-                while h.Enabled do
-                    local isDone = false
-                    -- Cari Value di dlm Generator
-                    for _, v in pairs(o:GetDescendants()) do
-                        if v:IsA("NumberValue") or v:IsA("IntValue") then
-                            if v.Value >= 100 or (v.Value >= 0.99 and v.Value <= 1.1) then
-                                isDone = true; break
-                            end
-                        end
-                    end
-                    h.FillColor = isDone and Color3.new(0, 1, 0) or Color3.new(1, 1, 0)
-                    task.wait(1.5)
-                end
-            end)
-        end
-    end
-end)
-
--- --- [LOGIC: PERFECT SKILLCHECK] ---
-local scOn = false
-ScB.MouseButton1Click:Connect(function()
-    scOn = not scOn
-    ScB.Text = scOn and "AUTO PERFECT: ON" or "AUTO PERFECT: OFF"
-    ScB.BackgroundColor3 = scOn and Color3.new(0, 0.5, 0) or Color3.new(0.2, 0.2, 0.2)
-end)
-
-RunService:BindToRenderStep("AdiPerfectV31", 100, function()
-    if not scOn then return end
-    local ui = pGui:FindFirstChild("SkillCheck") or pGui:FindFirstChild("ActionUI")
-    if ui and ui.Enabled then
-        local needle, perfect = nil, nil
-        for _, v in pairs(ui:GetDescendants()) do
-            if v:IsA("GuiObject") and v.Visible then
-                if v.BackgroundColor3 == Color3.new(1,0,0) or v.Name:lower():find("needle") then needle = v
-                elseif v.BackgroundColor3 == Color3.new(1,1,1) or v.Name:lower():find("perfect") then perfect = v end
-            end
-        end
-        if needle and perfect then
-            local nPos = needle.AbsolutePosition.X + (needle.AbsoluteSize.X/2)
-            local pPos = perfect.AbsolutePosition.X
-            local pWid = perfect.AbsoluteSize.X
-            -- Deteksi Range Bar Putih
-            if nPos >= (pPos - 5) and nPos <= (pPos + pWid + 5) then
-                VIM:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                task.wait(0.01); VIM:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-                task.wait(0.6)
-            end
-        end
-    end
-end)
-
--- --- [MISC] ---
 local dot = Instance.new("Frame", ScreenGui); dot.Size = UDim2.new(0,6,0,6); dot.Position = UDim2.new(0.5,-3,0.5,-3); dot.BackgroundColor3 = Color3.new(1,0,0); dot.Visible = false; Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
 CrB.MouseButton1Click:Connect(function() dot.Visible = not dot.Visible end)
-ExB.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
-local menuOpen = true
-UIS.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.LeftControl then menuOpen = not menuOpen; Main.Visible = menuOpen end end)
+UIS.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.LeftControl then Main.Visible = not Main.Visible end end)
