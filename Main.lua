@@ -1,55 +1,55 @@
--- [[ ADI PROJECT - V42 INTERNAL ENGINE HOOK ]] --
-
+-- [[ ADI V43 - ULTRA LIGHT ]] --
 local lp = game:GetService("Players").LocalPlayer
-local UIS = game:GetService("UserInputService")
+local VIM = game:GetService("VirtualInputManager")
 local RunService = game:GetService("RunService")
 
--- 1. DETEKSI UI SECARA PAKSA (RECURSIVE)
-local function getSkillcheckObjects()
-    local pGui = lp:FindFirstChild("PlayerGui")
-    if not pGui then return nil, nil end
-    
-    -- Mencari Needle dan White Bar di seluruh folder game
-    local needle = nil
-    local white = nil
-    
-    for _, v in pairs(pGui:GetDescendants()) do
-        if v:IsA("GuiObject") and v.Visible and v.AbsoluteSize.X > 0 then
-            -- Logika Iceware: Mencari Jarum berdasarkan rotasi yang aktif
-            if (v.Name:lower():find("needle") or v.Name:lower():find("pointer")) then
-                needle = v
-            elseif (v.Name:lower():find("perfect") or v.Name:lower():find("success") or v.BackgroundColor3 == Color3.new(1,1,1)) then
-                white = v
-            end
-        end
-    end
-    return needle, white
-end
+print("V43 Running - Auto Skillcheck & ESP Gen Active")
 
--- 2. AUTO PERFECT LOGIC (ZERO DELAY)
--- Menggunakan RenderStepped dengan prioritas tertinggi (2000)
-RunService:BindToRenderStep("AdiInternalHook", 2000, function()
-    local needle, white = getSkillcheckObjects()
-    
-    if needle and white then
-        local nRot = needle.Rotation % 360
-        local wRot = white.Rotation % 360
+-- 1. AUTO PERFECT SKILLCHECK
+RunService.Heartbeat:Connect(function()
+    local gui = lp.PlayerGui:FindFirstChild("SkillCheck", true) or lp.PlayerGui:FindFirstChild("ActionUI", true)
+    if gui and gui.Enabled then
+        local needle = gui:FindFirstChild("Needle", true) or gui:FindFirstChild("Pointer", true)
+        local bar = gui:FindFirstChild("Perfect", true) or gui:FindFirstChild("Success", true) or gui:FindFirstChild("White", true)
         
-        -- Kalkulasi jarak rotasi
-        local diff = math.abs(nRot - wRot)
-        
-        -- Iceware biasanya menekan spasi 2-5 derajat SEBELUM menyentuh zona
-        -- agar saat sinyal sampai ke server, posisinya tepat di tengah (Perfect)
-        if diff <= 7 or diff >= 353 then
-            -- MENGIRIM INPUT VIRTUAL LANGSUNG KE ENGINE
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-            task.wait(0.01)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-            
-            -- Anti-Spam (Menunggu sampai UI Skillcheck hilang)
-            repeat task.wait() until not needle or not needle.Parent
+        if needle and bar and needle.Visible then
+            local diff = math.abs((needle.Rotation % 360) - (bar.Rotation % 360))
+            if diff <= 10 or diff >= 350 then
+                VIM:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                task.wait(0.01)
+                VIM:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                task.wait(0.5) -- Cooldown
+            end
         end
     end
 end)
 
-print("V42 INTERNAL HOOK LOADED")
+-- 2. ESP GENERATOR (WARNA OTOMATIS)
+task.spawn(function()
+    while task.wait(2) do
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v.Name:lower():find("generator") and (v:IsA("Model") or v:IsA("BasePart")) then
+                local h = v:FindFirstChild("GenESP") or Instance.new("Highlight", v)
+                h.Name = "GenESP"; h.OutlineTransparency = 1
+                
+                local isDone = false
+                for _, part in pairs(v:GetDescendants()) do
+                    if part:IsA("BasePart") and part.Color.G > 0.7 and part.Color.R < 0.3 then
+                        isDone = true; break
+                    end
+                end
+                h.FillColor = isDone and Color3.new(0, 1, 0) or Color3.new(1, 1, 0)
+            end
+        end
+    end
+end)
+
+-- 3. SPEED (Tekan Q untuk aktifkan Speed 100)
+local speedActive = false
+game:GetService("UserInputService").InputBegan:Connect(function(io, gpe)
+    if gpe then return end
+    if io.KeyCode == Enum.KeyCode.Q then
+        speedActive = not speedActive
+        lp.Character.Humanoid.WalkSpeed = speedActive and 100 or 16
+    end
+end)
