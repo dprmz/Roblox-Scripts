@@ -1,4 +1,4 @@
--- [[ ADI PROJECT - V33 IMAGE-BASED FIX + AUTO AIM + AUTO GENERATOR + AUTO PARRY ]] --
+-- [[ ADI PROJECT - V33 IMAGE-BASED FIX + AUTO AIM ]] --
 
 if not game:IsLoaded() then game.Loaded:Wait() end
 local lp = game:GetService("Players").LocalPlayer
@@ -17,17 +17,17 @@ pcall(function() ScreenGui.Parent = gethui() or game:GetService("CoreGui") end)
 local Main = Instance.new("Frame", ScreenGui)
 Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Main.Position = UDim2.new(0.5, -135, 0.5, -250)
-Main.Size = UDim2.new(0, 270, 0, 650) -- Resized untuk tombol baru
+Main.Size = UDim2.new(0, 270, 0, 550) -- Resized untuk tombol baru
 Main.Active = true
 Main.Draggable = true
 Instance.new("UICorner", Main)
 
 local Title = Instance.new("TextLabel", Main)
-Title.Text = "ADI MENU PRO V33 + ALL FEATURES"
+Title.Text = "ADI MENU PRO V33 + AIM"
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Font = Enum.Font.SourceSansBold; Title.TextSize = 16
+Title.Font = Enum.Font.SourceSansBold; Title.TextSize = 20
 Instance.new("UICorner", Title)
 
 -- --- [FUNGSI PEMBUAT TOMBOL & SLIDER] ---
@@ -35,13 +35,13 @@ local function createBtn(txt, pos, col)
     local b = Instance.new("TextButton", Main)
     b.Text = txt; b.Size = UDim2.new(0.85, 0, 0, 38); b.Position = UDim2.new(0.075, 0, 0, pos)
     b.BackgroundColor3 = col; b.TextColor3 = Color3.new(1, 1, 1)
-    b.Font = Enum.Font.SourceSansBold; b.TextSize = 14
+    b.Font = Enum.Font.SourceSansBold; b.TextSize = 16
     Instance.new("UICorner", b); return b
 end
 
 local function createSlider(title, pos, col)
     local t = Instance.new("TextLabel", Main)
-    t.Text = title; t.Size = UDim2.new(1,0,0,20); t.Position = UDim2.new(0,0,0,pos); t.BackgroundTransparency = 1; t.TextColor3 = Color3.new(0.8,0.8,0.8); t.TextSize = 12
+    t.Text = title; t.Size = UDim2.new(1,0,0,20); t.Position = UDim2.new(0,0,0,pos); t.BackgroundTransparency = 1; t.TextColor3 = Color3.new(0.8,0.8,0.8); t.TextSize = 14
     local bg = Instance.new("Frame", Main)
     bg.Size = UDim2.new(0.8,0,0,6); bg.Position = UDim2.new(0.1,0,0,pos+25); bg.BackgroundColor3 = Color3.fromRGB(50,50,50)
     local btn = Instance.new("TextButton", bg)
@@ -69,22 +69,10 @@ end)
 
 -- Variabel untuk Aim
 local aimEnabled = false
-local aimSmoothness = 0.3
-local aimFOV = 200
+local aimSmoothness = 0.3 -- 0-1 (0 = instant, 1 = very smooth)
+local aimFOV = 200 -- radius dalam pixels
 local currentTarget = nil
 local rightMousePressed = false
-
--- Variabel untuk Auto Generator
-local autoGenEnabled = false
-local currentGenerator = nil
-local autoRepairing = false
-
--- Variabel untuk Auto Parry/Dagger
-local autoParryEnabled = false
-local lastAttackTime = 0
-local parryCooldown = 0.5 -- Cooldown 0.5 detik
-local activeKiller = nil
-local isDaggerMode = false -- False = Parry, True = Dagger (counter attack)
 
 -- Update slider values
 RunService.RenderStepped:Connect(function()
@@ -105,11 +93,11 @@ RunService.RenderStepped:Connect(function()
     elseif dAS then
         local r = math.clamp((mX - bAimSmooth.AbsolutePosition.X) / bAimSmooth.AbsoluteSize.X, 0, 1)
         sAimSmooth.Position = UDim2.new(r, -7, -0.7, 0)
-        aimSmoothness = r * 0.9 + 0.1
+        aimSmoothness = r * 0.9 + 0.1 -- Range 0.1 - 1.0
     elseif dAF then
         local r = math.clamp((mX - bAimFOV.AbsolutePosition.X) / bAimFOV.AbsoluteSize.X, 0, 1)
         sAimFOV.Position = UDim2.new(r, -7, -0.7, 0)
-        aimFOV = 50 + (r * 350)
+        aimFOV = 50 + (r * 350) -- Range 50 - 400 pixels
     end
 end)
 
@@ -139,217 +127,23 @@ end
 local function smoothAim(target)
     if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then return end
     
-    local targetPos = target.Character.HumanoidRootPart.Position + Vector3.new(0, 1.5, 0)
+    local targetPos = target.Character.HumanoidRootPart.Position + Vector3.new(0, 1.5, 0) -- Aim ke kepala/dada
     local currentCFrame = Camera.CFrame
     local targetCFrame = CFrame.new(currentCFrame.Position, targetPos)
     
+    -- Interpolasi smooth
     local newCFrame = currentCFrame:Lerp(targetCFrame, aimSmoothness)
     Camera.CFrame = newCFrame
 end
 
--- --- [AUTO GENERATOR FUNCTIONS] ---
-local function findNearestGenerator()
-    local nearest = nil
-    local shortestDist = math.huge
-    local charPos = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and lp.Character.HumanoidRootPart.Position
-    
-    if not charPos then return nil end
-    
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and (obj.Name:lower():find("generator") or obj.Name:lower():find("gen")) then
-            local isFinished = false
-            for _, light in pairs(obj:GetDescendants()) do
-                if light:IsA("BasePart") and light.Name:lower():find("light") then
-                    if light.Color.G > 0.7 and light.Color.R < 0.3 then
-                        isFinished = true
-                        break
-                    end
-                end
-            end
-            
-            if not isFinished then
-                local genPos = obj:FindFirstChild("HumanoidRootPart") and obj.HumanoidRootPart.Position or obj.PrimaryPart and obj.PrimaryPart.Position
-                if genPos then
-                    local dist = (charPos - genPos).Magnitude
-                    if dist < shortestDist then
-                        shortestDist = dist
-                        nearest = obj
-                    end
-                end
-            end
-        end
-    end
-    return nearest
-end
-
-local function autoFixGenerator()
-    if not autoGenEnabled then return end
-    
-    local gen = findNearestGenerator()
-    if not gen then 
-        if autoRepairing then
-            autoRepairing = false
-        end
-        return 
-    end
-    
-    if lp.Character and lp.Character:FindFirstChild("Humanoid") and gen:FindFirstChild("HumanoidRootPart") then
-        local humanoid = lp.Character.Humanoid
-        local genPos = gen.HumanoidRootPart.Position
-        local distToGen = (lp.Character.HumanoidRootPart.Position - genPos).Magnitude
-        
-        if distToGen > 8 then
-            humanoid:MoveTo(genPos)
-            autoRepairing = false
-        else
-            humanoid:MoveTo(lp.Character.HumanoidRootPart.Position)
-            
-            if not autoRepairing then
-                autoRepairing = true
-                local genPart = gen:FindFirstChild("HumanoidRootPart") or gen.PrimaryPart
-                if genPart then
-                    local clickDetectors = gen:GetDescendants()
-                    for _, cd in pairs(clickDetectors) do
-                        if cd:IsA("ClickDetector") then
-                            cd:FireClick(lp.Character:FindFirstChild("HumanoidRootPart"))
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
--- --- [AUTO PARRY/DAGGER FUNCTIONS] ---
-local function getKiller()
-    for _, p in pairs(game.Players:GetPlayers()) do
-        if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            -- Deteksi killer berdasarkan tim atau attribute
-            if p.Team and (p.Team.Name:lower():find("killer") or p.Team.Name:lower():find("beast") or p.Team.Name:lower():find("monster")) then
-                return p
-            end
-            -- Alternative: cek apakah dia punya weapon/tool yang bisa menyerang
-            if p.Character:FindFirstChildWhichIsA("Tool") then
-                return p
-            end
-        end
-    end
-    return nil
-end
-
-local function detectAttack()
-    -- Method 1: Deteksi animation track yang menyerang
-    local killer = getKiller()
-    if killer and killer.Character then
-        local humanoid = killer.Character:FindFirstChild("Humanoid")
-        if humanoid and humanoid:FindFirstChild("Animator") then
-            local animator = humanoid.Animator
-            for _, track in pairs(animator:GetPlayingAnimationTracks()) do
-                local animName = track.Animation.AnimationId:lower()
-                if animName:find("attack") or animName:find("slash") or animName:find("hit") or animName:find("swing") then
-                    return true, killer
-                end
-            end
-        end
-    end
-    
-    -- Method 2: Deteksi tool yang aktif
-    if killer and killer.Character then
-        local tool = killer.Character:FindFirstChildWhichIsA("Tool")
-        if tool and tool:FindFirstChild("Handle") then
-            -- Cek apakah tool sedang dalam animasi attack
-            for _, v in pairs(tool:GetDescendants()) do
-                if v:IsA("NumberValue") and v.Name:lower():find("attack") and v.Value > 0 then
-                    return true, killer
-                end
-            end
-        end
-    end
-    
-    -- Method 3: Deteksi perubahan jarak tiba-tiba (lunges)
-    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and killer and killer.Character then
-        local dist = (lp.Character.HumanoidRootPart.Position - killer.Character.HumanoidRootPart.Position).Magnitude
-        if dist < 8 then -- Jarak serangan melee
-            return true, killer
-        end
-    end
-    
-    return false, nil
-end
-
-local function performParry()
-    if not autoParryEnabled then return end
-    
-    local currentTime = tick()
-    if currentTime - lastAttackTime < parryCooldown then return end
-    
-    local isAttacking, attacker = detectAttack()
-    
-    if isAttacking and attacker then
-        lastAttackTime = currentTime
-        
-        -- Method 1: Press F untuk parry (standar di banyak game)
-        VIM:SendKeyEvent(true, Enum.KeyCode.F, false, game)
-        task.wait(0.05)
-        VIM:SendKeyEvent(false, Enum.KeyCode.F, false, game)
-        
-        -- Method 2: Jika ada tombol block/parry spesifik
-        VIM:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
-        task.wait(0.05)
-        VIM:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
-        
-        -- Method 3: Untuk game yang menggunakan mouse button (block)
-        VIM:SendMouseButtonEvent(Enum.UserInputType.MouseButton2, true, false, 0, 0)
-        task.wait(0.1)
-        VIM:SendMouseButtonEvent(Enum.UserInputType.MouseButton2, false, false, 0, 0)
-        
-        -- Jika mode dagger, lakukan counter attack
-        if isDaggerMode then
-            task.wait(0.1)
-            -- Serang balik dengan tool yang dimiliki
-            local tool = lp.Character and lp.Character:FindFirstChildWhichIsA("Tool")
-            if tool then
-                VIM:SendMouseButtonEvent(Enum.UserInputType.MouseButton1, true, false, 0, 0)
-                task.wait(0.05)
-                VIM:SendMouseButtonEvent(Enum.UserInputType.MouseButton1, false, false, 0, 0)
-            end
-        end
-        
-        -- Visual feedback (screen flash)
-        if lp.PlayerGui:FindFirstChild("ScreenEffect") then
-            -- Optional: create flash effect
-        end
-    end
-end
-
--- Visual indicator for parry range
-local function createParryIndicator()
-    local indicator = Instance.new("SelectionBox")
-    indicator.Name = "ParryIndicator"
-    indicator.Color3 = Color3.new(0, 1, 0)
-    indicator.LineThickness = 0.1
-    indicator.Transparency = 0.5
-    
-    local killer = getKiller()
-    if killer and killer.Character and killer.Character:FindFirstChild("HumanoidRootPart") then
-        indicator.Adornee = killer.Character.HumanoidRootPart
-        indicator.Parent = killer.Character
-    end
-    
-    return indicator
-end
-
 -- --- [BUTTONS] ---
 local AimB = createBtn("AUTO AIM: OFF (Hold RMB)", 155, Color3.fromRGB(200, 50, 50))
-local AutoGenB = createBtn("AUTO FIX GENERATOR: OFF", 200, Color3.fromRGB(200, 100, 0))
-local ParryB = createBtn("AUTO PARRY: OFF", 245, Color3.fromRGB(0, 100, 200))
-local DaggerB = createBtn("MODE: PARRY (Defensive)", 290, Color3.fromRGB(100, 100, 100))
-local WhB = createBtn("Wallhack Player", 335, Color3.fromRGB(80, 0, 150))
-local GeB = createBtn("Generator ESP (Color Fix)", 380, Color3.fromRGB(160, 120, 0))
-local ViB = createBtn("Visual Hitbox Line: OFF", 425, Color3.fromRGB(140, 0, 0))
-local ScB = createBtn("AUTO PERFECT: OFF", 470, Color3.fromRGB(50, 50, 50))
-local CrB = createBtn("Toggle Crosshair", 515, Color3.fromRGB(50, 50, 50))
-createBtn("CLOSE SCRIPT", 590, Color3.fromRGB(180, 0, 0)).MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+local WhB = createBtn("Wallhack Player", 200, Color3.fromRGB(80, 0, 150))
+local GeB = createBtn("Generator ESP (Color Fix)", 245, Color3.fromRGB(160, 120, 0))
+local ViB = createBtn("Visual Hitbox Line: OFF", 290, Color3.fromRGB(140, 0, 0))
+local ScB = createBtn("AUTO PERFECT: OFF", 335, Color3.fromRGB(50, 50, 50))
+local CrB = createBtn("Toggle Crosshair", 380, Color3.fromRGB(50, 50, 50))
+createBtn("CLOSE SCRIPT", 485, Color3.fromRGB(180, 0, 0)).MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
 -- Toggle Auto Aim
 AimB.MouseButton1Click:Connect(function()
@@ -358,38 +152,10 @@ AimB.MouseButton1Click:Connect(function()
     AimB.BackgroundColor3 = aimEnabled and Color3.new(0, 0.7, 0) or Color3.new(0.6, 0, 0)
 end)
 
--- Toggle Auto Generator
-AutoGenB.MouseButton1Click:Connect(function()
-    autoGenEnabled = not autoGenEnabled
-    AutoGenB.Text = autoGenEnabled and "AUTO FIX GENERATOR: ON" or "AUTO FIX GENERATOR: OFF"
-    AutoGenB.BackgroundColor3 = autoGenEnabled and Color3.new(0, 0.7, 0) or Color3.new(0.6, 0.2, 0)
-    
-    if not autoGenEnabled then
-        autoRepairing = false
-        if lp.Character and lp.Character:FindFirstChild("Humanoid") then
-            lp.Character.Humanoid:MoveTo(lp.Character.HumanoidRootPart.Position)
-        end
-    end
-end)
-
--- Toggle Auto Parry
-ParryB.MouseButton1Click:Connect(function()
-    autoParryEnabled = not autoParryEnabled
-    ParryB.Text = autoParryEnabled and "AUTO PARRY: ON" or "AUTO PARRY: OFF"
-    ParryB.BackgroundColor3 = autoParryEnabled and Color3.new(0, 0.7, 0) or Color3.new(0.6, 0, 0.2)
-end)
-
--- Toggle Dagger Mode (Counter Attack)
-DaggerB.MouseButton1Click:Connect(function()
-    isDaggerMode = not isDaggerMode
-    DaggerB.Text = isDaggerMode and "MODE: DAGGER (Counter)" or "MODE: PARRY (Defensive)"
-    DaggerB.BackgroundColor3 = isDaggerMode and Color3.new(0.7, 0, 0) or Color3.new(0.3, 0.3, 0.3)
-end)
-
 -- Mouse button detection untuk Aim
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Right Mouse Button
         rightMousePressed = true
     end
 end)
@@ -411,21 +177,7 @@ RunService:BindToRenderStep("AutoAimV33", Enum.RenderPriority.Camera.Value, func
     end
 end)
 
--- Loop Auto Generator
-RunService:BindToRenderStep("AutoGeneratorV33", Enum.RenderPriority.Low.Value, function()
-    if autoGenEnabled and lp.Character and lp.Character:FindFirstChild("Humanoid") and lp.Character.Humanoid.Health > 0 then
-        autoFixGenerator()
-    end
-end)
-
--- Loop Auto Parry (run lebih cepat untuk deteksi attack)
-RunService:BindToRenderStep("AutoParryV33", Enum.RenderPriority.Input.Value, function()
-    if autoParryEnabled and lp.Character and lp.Character:FindFirstChild("Humanoid") and lp.Character.Humanoid.Health > 0 then
-        performParry()
-    end
-end)
-
--- --- [GENERATOR ESP + AUTO PERFECT] ---
+-- --- [FIX: GENERATOR COLOR DETECTION] ---
 GeB.MouseButton1Click:Connect(function()
     for _, o in pairs(workspace:GetDescendants()) do
         if (o.Name:lower():find("generator") or o.Name:lower():find("computer")) and (o:IsA("Model") or o:IsA("BasePart")) then
@@ -450,7 +202,7 @@ GeB.MouseButton1Click:Connect(function()
     end
 end)
 
--- Perfect Skill Check
+-- --- [FIX: RADIAL PERFECT SKILLCHECK] ---
 local scOn = false
 ScB.MouseButton1Click:Connect(function()
     scOn = not scOn
