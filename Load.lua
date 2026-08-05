@@ -4,30 +4,34 @@ local ProjectName = "ADI"
 -- Buat folder lokal untuk settings/logs
 local folders = {ProjectName, ProjectName.."/Settings", ProjectName.."/Logs"}
 for _, v in pairs(folders) do
-    if not isfolder(v) then makefolder(v) end
+    if not isfolder(v) then
+        makefolder(v)
+    end
 end
 
--- GANTI "username" DENGAN USERNAME GITHUB ASLI KAMU
-local GITHUB_RAW = "https://raw.githubusercontent.com/username/AdiV33/main/"
+-- GitHub Raw
+local GITHUB_RAW = "https://raw.githubusercontent.com/dprmz/Roblox-Scripts/main/"
 
 local GameScripts = {
-    [93978595733734] = GITHUB_RAW .. "Main.lua",  -- Violence District Place ID
+    [93978595733734] = GITHUB_RAW .. "Main.lua",
 }
 
 local currentId = game.PlaceId
 
-if GameScripts[currentId] then
-    print("[" .. ProjectName .. "] Map detected! Loading fresh script...")
+local scriptUrl = GameScripts[currentId]
+
+if scriptUrl then
+    print("[" .. ProjectName .. "] Map detected! Loading script...")
+
     local success, err = pcall(function()
-        -- ?t= menghancurkan cache browser GitHub
-        local scriptUrl = GameScripts[currentId] .. "?t=" .. tick()
-        loadstring(game:HttpGet(scriptUrl))()
+        loadstring(game:HttpGet(scriptUrl .. "?t=" .. os.time()))()
     end)
+
     if success then
-        print("[" .. ProjectName .. "] Script loaded perfectly!")
+        print("[" .. ProjectName .. "] Script loaded successfully!")
     else
-        warn("[" .. ProjectName .. "] Load error: " .. tostring(err))
+        warn("[" .. ProjectName .. "] Error: " .. tostring(err))
     end
 else
-    warn("[" .. ProjectName .. "] Place ID not found: " .. currentId)
+    warn("[" .. ProjectName .. "] Unsupported PlaceId: " .. currentId)
 end
