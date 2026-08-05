@@ -1,709 +1,677 @@
--- [[ ADI PROJECT - V33 VIOLENCE DISTRICT - PREMIUM SIDEBAR V2 ]] --
--- DELTA EXECUTOR FIXED & OPTIMIZED VERSION
+-- ============================================================
+-- MAIN.LUA – VIOLENCE DISTRICT SCRIPT (ADI PROJECT)
+-- All features: sidebar menu, wallhack, hook ESP, speed+,
+-- auto-aim, auto-parry (radius adjustable), fast vault.
+-- Works on Delta and any executor supporting Drawing & UI.
+-- ============================================================
 
-if not game:IsLoaded() then game.Loaded:Wait() end
-
-local Players = game:GetService("Players")
-local lp = Players.LocalPlayer
-local pGui = lp:WaitForChild("PlayerGui")
-local UIS = game:GetService("UserInputService")
+local Player = game:GetService("Players").LocalPlayer
 local RunService = game:GetService("RunService")
-local VIM = game:GetService("VirtualInputManager")
-local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local Lighting = game:GetService("Lighting")
+local GuiService = game:GetService("GuiService")
 
--- Detect Delta
-local isDelta = (getexecutorname and getexecutorname() == "Delta")
-if isDelta and setfpscap then
-    pcall(function() setfpscap(60) end)
+-- Utility: safe require
+local function safeRequire(module)
+    local success, result = pcall(require, module)
+    return success and result or nil
 end
 
--- Safely get GUI Container
-local function getUIContainer()
-    local success, target = pcall(function()
-        return (gethui and gethui()) or game:GetService("CoreGui")
-    end)
-    if success and target then return target end
-    return lp:WaitForChild("PlayerGui")
-end
+-- ============================================================
+-- SETTINGS (persistent across sessions if you save, but we keep in memory)
+-- ============================================================
+local Settings = {
+    WallhackSurvivor = false,
+    WallhackKiller = false,
+    HookESP = false,
+    SpeedEnabled = false,
+    SpeedValue = 16,      -- default walkspeed
+    AutoAim = false,
+    AimPart = "Head",     -- or "Torso"
+    AutoParry = false,
+    ParryRadius = 15,     -- studs
+    FastVault = false,
+}
 
--- Remove Existing GUI Instance
-local container = getUIContainer()
-if container:FindFirstChild("AdiV33_VD_SidebarUI") then
-    container:FindFirstChild("AdiV33_VD_SidebarUI"):Destroy()
-end
+-- ============================================================
+-- GUI CREATION
+-- ============================================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ADIGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = Player:WaitForChild("PlayerGui")
 
--- ============================================
--- ========== CORE VARIABLES ==================
--- ============================================
-local aimEnabled = false
-local aimSmoothness = 0.3
-local aimFOV = 200
-local rightMousePressed = false
-local autoPerfectEnabled = false
-local lastSkillCheckTime = 0
-local skillCheckCooldown = 0.3
-local wallhackActive = true
-local genEspActive = false
+-- Style constants
+local colors = {
+    bg = Color3.fromRGB(20, 20, 30),
+    accent = Color3.fromRGB(255, 170, 0),
+    text = Color3.fromRGB(240, 240, 255),
+    toggleOn = Color3.fromRGB(0, 200, 80),
+    toggleOff = Color3.fromRGB(200, 50, 50),
+}
 
-local origFogStart = Lighting.FogStart
-local origFogEnd = Lighting.FogEnd
-local origAmbient = Lighting.Ambient
-local origOutdoorAmbient = Lighting.OutdoorAmbient
+-- Main sidebar
+local sidebar = Instance.new("Frame")
+sidebar.Size = UDim2.new(0, 220, 1, 0)
+sidebar.Position = UDim2.new(0, -220, 0, 0) -- hidden initially
+sidebar.BackgroundColor3 = colors.bg
+sidebar.BackgroundTransparency = 0.15
+sidebar.BorderSizePixel = 0
+sidebar.Parent = screenGui
 
--- ============================================
--- ========== ESP FUNCTIONS ===================
--- ============================================
+-- Toggle button to show/hide sidebar (top-left corner)
+local toggleBtn = Instance.new("ImageButton")
+toggleBtn.Size = UDim2.new(0, 40, 0, 40)
+toggleBtn.Position = UDim2.new(0, 5, 0, 5)
+toggleBtn.BackgroundColor3 = colors.accent
+toggleBtn.BackgroundTransparency = 0.4
+toggleBtn.BorderSizePixel = 0
+toggleBtn.Image = "rbxassetid://6031090793" -- menu icon
+toggleBtn.Parent = screenGui
 
-local function createESPLabel(player)
-    if not player or not player.Character then return nil end
-    local char = player.Character
-    local head = char:FindFirstChild("Head")
-    if not head then return nil end
-    
-    local oldLabel = char:FindFirstChild("ESP_Label")
-    if oldLabel then oldLabel:Destroy() end
-    
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "ESP_Label"
-    billboard.Size = UDim2.new(0, 250, 0, 70)
-    billboard.Adornee = head
-    billboard.AlwaysOnTop = true
-    billboard.MaxDistance = 1000
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
-    billboard.Enabled = true
-    
-    local bgFrame = Instance.new("Frame")
-    bgFrame.Name = "Background"
-    bgFrame.Size = UDim2.new(1, 0, 1, 0)
-    bgFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    bgFrame.BackgroundTransparency = 0.5
-    bgFrame.Parent = billboard
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = bgFrame
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Name = "TextLabel"
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = ""
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextSize = 14
-    textLabel.TextStrokeTransparency = 0.2
-    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    textLabel.TextYAlignment = Enum.TextYAlignment.Center
-    textLabel.Parent = bgFrame
-    
-    local isKiller = player.Team and (player.Team.Name:lower():find("killer") or player.Team.Name:lower():find("beast") or player.Team.Name:lower():find("murderer"))
-    textLabel.TextColor3 = isKiller and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(100, 200, 255)
-    
-    billboard.Parent = char
-    return billboard
-end
-
-local function updateESPLabel(player)
-    if not player or not player.Character then return end
-    local billboard = player.Character:FindFirstChild("ESP_Label")
-    if not billboard then return end
-    local bgFrame = billboard:FindFirstChild("Background")
-    if not bgFrame then return end
-    local textLabel = bgFrame:FindFirstChild("TextLabel")
-    if not textLabel then return end
-    
-    local humanoid = player.Character:FindFirstChild("Humanoid")
-    local isAlive = humanoid and humanoid.Health > 0
-    if not isAlive then
-        textLabel.Text = player.Name .. "\n[💀 ELIMINATED]"
-        textLabel.TextColor3 = Color3.fromRGB(128, 128, 128)
-        return
-    end
-    
-    local distance = -1
-    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("HumanoidRootPart") then
-        distance = (lp.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-    end
-    
-    local distText = distance >= 0 and string.format("%.1f", distance) or "???"
-    local statusIcon = ""
-    if distance >= 0 then
-        if distance < 20 then statusIcon = "🔴 "
-        elseif distance < 50 then statusIcon = "🟡 "
-        elseif distance < 100 then statusIcon = "🟢 "
-        else statusIcon = "🔵 " end
-    end
-    
-    local isKiller = player.Team and (player.Team.Name:lower():find("killer") or player.Team.Name:lower():find("beast") or player.Team.Name:lower():find("murderer"))
-    local textColor = isKiller and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(100, 200, 255)
-    if distance >= 0 and distance < 20 then textColor = Color3.fromRGB(255, 200, 0) end
-    
-    textLabel.TextColor3 = textColor
-    textLabel.Text = player.Name .. "\n" .. statusIcon .. distText .. "m"
-end
-
-local function setupESPForAllPlayers()
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= lp and p.Character then
-            local highlight = p.Character:FindFirstChild("AdiESP")
-            if highlight then highlight:Destroy() end
-            local label = p.Character:FindFirstChild("ESP_Label")
-            if label then label:Destroy() end
-        end
-    end
-    
-    if not wallhackActive then return end
-    
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= lp and p.Character then
-            local h = Instance.new("Highlight")
-            h.Name = "AdiESP"
-            h.Enabled = true
-            h.OutlineTransparency = 0
-            h.FillTransparency = 1
-            local isKiller = p.Team and (p.Team.Name:lower():find("killer") or p.Team.Name:lower():find("beast"))
-            h.OutlineColor = isKiller and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(15, 45, 125)
-            h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            h.Parent = p.Character
-            
-            local label = createESPLabel(p)
-            if label then
-                label.Enabled = true
-                updateESPLabel(p)
-            end
-        end
-    end
-end
-
--- ============================================
--- ========== MAIN INTERFACE DESIGN ===========
--- ============================================
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AdiV33_VD_SidebarUI"
-ScreenGui.ResetOnSpawn = false
-
-local Main = Instance.new("Frame")
-Main.Name = "MainFrame"
-Main.BackgroundColor3 = Color3.fromRGB(13, 13, 17)
-Main.Position = UDim2.new(0.5, -260, 0.5, -200)
-Main.Size = UDim2.new(0, 520, 0, 400)
-Main.BackgroundTransparency = 0.05
-Main.ClipsDescendants = true
-Main.Active = true
-Main.Parent = ScreenGui
-
-local MainCorner = Instance.new("UICorner", Main)
-MainCorner.CornerRadius = UDim.new(0, 14)
-
-local MainStroke = Instance.new("UIStroke", Main)
-MainStroke.Thickness = 1.2
-MainStroke.Color = Color3.fromRGB(35, 35, 45)
-
-local TopGlow = Instance.new("Frame", Main)
-TopGlow.Size = UDim2.new(1, 0, 0, 2)
-TopGlow.BackgroundColor3 = Color3.fromRGB(115, 75, 255)
-TopGlow.BorderSizePixel = 0
-
-local Header = Instance.new("Frame", Main)
-Header.Size = UDim2.new(1, 0, 0, 50)
-Header.BackgroundTransparency = 1
-
--- Dragging Engine
-local dragging, dragStart, startPos
-Header.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = Main.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
-    end
+local sidebarVisible = false
+toggleBtn.MouseButton1Click:Connect(function()
+    sidebarVisible = not sidebarVisible
+    local targetX = sidebarVisible and 0 or -220
+    TweenService:Create(sidebar, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+        Position = UDim2.new(0, targetX, 0, 0)
+    }):Play()
 end)
 
-Header.InputChanged:Connect(function(input)
-    if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragging then
-        local delta = input.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "☣ ADI MENU ☣"
+title.TextColor3 = colors.accent
+title.TextSize = 22
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = sidebar
 
-local Title = Instance.new("TextLabel", Header)
-Title.Text = "ADI PROJECT  //  V3.3"
-Title.Size = UDim2.new(0.5, 0, 1, 0)
-Title.Position = UDim2.new(0, 20, 0, 0)
-Title.BackgroundTransparency = 1
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
-Title.TextXAlignment = Enum.TextXAlignment.Left
+-- Scrollable container for menu items
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(1, -10, 1, -50)
+scroll.Position = UDim2.new(0, 5, 0, 45)
+scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
+scroll.ScrollBarThickness = 4
+scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.Parent = sidebar
 
-local CloseBtn = Instance.new("TextButton", Header)
-CloseBtn.Text = ""
-CloseBtn.Size = UDim2.new(0, 12, 0, 12)
-CloseBtn.Position = UDim2.new(1, -25, 0, 19)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1, 0)
+local UIList = Instance.new("UIListLayout")
+UIList.Padding = UDim.new(0, 8)
+UIList.SortOrder = Enum.SortOrder.LayoutOrder
+UIList.Parent = scroll
 
--- Sidebar Layout
-local Sidebar = Instance.new("Frame", Main)
-Sidebar.Size = UDim2.new(0, 140, 1, -50)
-Sidebar.Position = UDim2.new(0, 0, 0, 50)
-Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
-Sidebar.BorderSizePixel = 0
-
-local ButtonHolder = Instance.new("Frame", Sidebar)
-ButtonHolder.Size = UDim2.new(1, 0, 1, -10)
-ButtonHolder.Position = UDim2.new(0, 0, 0, 10)
-ButtonHolder.BackgroundTransparency = 1
-
-local TabContainer = Instance.new("UIListLayout", ButtonHolder)
-TabContainer.SortOrder = Enum.SortOrder.LayoutOrder
-TabContainer.Padding = UDim.new(0, 4)
-
-local SidebarRightLine = Instance.new("Frame", Sidebar)
-SidebarRightLine.Size = UDim2.new(0, 1, 1, 0)
-SidebarRightLine.Position = UDim2.new(1, -1, 0, 0)
-SidebarRightLine.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-SidebarRightLine.BorderSizePixel = 0
-
-local ContentArea = Instance.new("Frame", Main)
-ContentArea.Size = UDim2.new(1, -165, 1, -70)
-ContentArea.Position = UDim2.new(0, 153, 0, 60)
-ContentArea.BackgroundTransparency = 1
-
-local tabs = {}
-local currentActiveView = nil
-
-local function createTab(name, order)
-    local tabBtn = Instance.new("TextButton", ButtonHolder)
-    tabBtn.Text = "   " .. name:upper()
-    tabBtn.Size = UDim2.new(1, 0, 0, 36)
-    tabBtn.BackgroundTransparency = 1
-    tabBtn.TextColor3 = Color3.fromRGB(120, 120, 140)
-    tabBtn.Font = Enum.Font.GothamBold
-    tabBtn.TextSize = 11
-    tabBtn.TextXAlignment = Enum.TextXAlignment.Left
-    tabBtn.LayoutOrder = order
-    
-    local view = Instance.new("ScrollingFrame", ContentArea)
-    view.Size = UDim2.new(1, 0, 1, 0)
-    view.BackgroundTransparency = 1
-    view.BorderSizePixel = 0
-    view.Visible = false
-    view.ScrollBarThickness = 2
-    view.ScrollBarImageColor3 = Color3.fromRGB(40, 40, 50)
-    
-    local viewLayout = Instance.new("UIListLayout", view)
-    viewLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    viewLayout.Padding = UDim.new(0, 10)
-    
-    tabBtn.MouseButton1Click:Connect(function()
-        if currentActiveView == view then return end
-        for _, t in pairs(tabs) do
-            TweenService:Create(t.Btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-                TextColor3 = Color3.fromRGB(120, 120, 140),
-                BackgroundTransparency = 1
-            }):Play()
-            t.View.Visible = false
-            t.View.CanvasPosition = Vector2.new(0,0)
-        end
-        TweenService:Create(tabBtn, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            TextColor3 = Color3.fromRGB(115, 75, 255),
-            BackgroundTransparency = 0.95
-        }):Play()
-        tabBtn.BackgroundColor3 = Color3.fromRGB(115, 75, 255)
-        view.Size = UDim2.new(1, 0, 0.95, 0)
-        view.Visible = true
-        TweenService:Create(view, TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
-            Size = UDim2.new(1, 0, 1, 0)
-        }):Play()
-        currentActiveView = view
-    end)
-    
-    tabs[name] = {Btn = tabBtn, View = view}
-    return view
+-- ============================================================
+-- HELPER FUNCTIONS FOR UI ELEMENTS
+-- ============================================================
+local function createCategory(parent, name, order)
+    local cat = Instance.new("TextLabel")
+    cat.Size = UDim2.new(1, 0, 0, 30)
+    cat.BackgroundTransparency = 1
+    cat.Text = name
+    cat.TextColor3 = colors.accent
+    cat.TextSize = 18
+    cat.TextXAlignment = Enum.TextXAlignment.Left
+    cat.Font = Enum.Font.GothamBold
+    cat.LayoutOrder = order
+    cat.Parent = parent
+    return cat
 end
 
--- Pages
-local survView = createTab("Survivor", 1)
-local killerView = createTab("Killer", 2)
-local visualView = createTab("Visuals", 3)
-local controlView = createTab("Controls", 4)
-
-tabs["Survivor"].Btn.TextColor3 = Color3.fromRGB(115, 75, 255)
-tabs["Survivor"].Btn.BackgroundTransparency = 0.95
-tabs["Survivor"].Btn.BackgroundColor3 = Color3.fromRGB(115, 75, 255)
-survView.Visible = true
-currentActiveView = survView
-
--- UI Builders
-local function createToggle(parent, text)
-    local frame = Instance.new("Frame", parent)
-    frame.Size = UDim2.new(0.96, 0, 0, 42)
-    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 27)
-    
-    local fCrn = Instance.new("UICorner", frame); fCrn.CornerRadius = UDim.new(0, 8)
-    local fStr = Instance.new("UIStroke", frame); fStr.Thickness = 1; fStr.Color = Color3.fromRGB(32, 32, 42)
-    
-    local txt = Instance.new("TextLabel", frame)
-    txt.Text = text
-    txt.Size = UDim2.new(0.7, 0, 1, 0)
-    txt.Position = UDim2.new(0, 14, 0, 0)
-    txt.BackgroundTransparency = 1
-    txt.TextColor3 = Color3.fromRGB(200, 200, 220)
-    txt.Font = Enum.Font.GothamBold
-    txt.TextSize = 11
-    txt.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local switch = Instance.new("TextButton", frame)
-    switch.Text = ""
-    switch.Size = UDim2.new(0, 42, 0, 22)
-    switch.Position = UDim2.new(1, -56, 0.5, -11)
-    switch.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    
-    local sCrn = Instance.new("UICorner", switch); sCrn.CornerRadius = UDim.new(1, 0)
-    local sStr = Instance.new("UIStroke", switch); sStr.Thickness = 1; sStr.Color = Color3.fromRGB(50, 50, 65)
-    
-    local dot = Instance.new("Frame", switch)
-    dot.Size = UDim2.new(0, 14, 0, 14)
-    dot.Position = UDim2.new(0, 4, 0.5, -7)
-    dot.BackgroundColor3 = Color3.fromRGB(150, 150, 170)
-    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
-    
-    local active = false
-    local function click()
-        active = not active
-        switch:SetAttribute("Active", active)
-        if active then
-            TweenService:Create(switch, TweenInfo.new(0.2, Enum.EasingStyle.Cubic), {BackgroundColor3 = Color3.fromRGB(40, 180, 115)}):Play()
-            TweenService:Create(sStr, TweenInfo.new(0.2, Enum.EasingStyle.Cubic), {Color = Color3.fromRGB(60, 220, 140)}):Play()
-            TweenService:Create(dot, TweenInfo.new(0.2, Enum.EasingStyle.Cubic), {Position = UDim2.new(1, -18, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-        else
-            TweenService:Create(switch, TweenInfo.new(0.2, Enum.EasingStyle.Cubic), {BackgroundColor3 = Color3.fromRGB(35, 35, 45)}):Play()
-            TweenService:Create(sStr, TweenInfo.new(0.2, Enum.EasingStyle.Cubic), {Color = Color3.fromRGB(50, 50, 65)}):Play()
-            TweenService:Create(dot, TweenInfo.new(0.2, Enum.EasingStyle.Cubic), {Position = UDim2.new(0, 4, 0.5, -7), BackgroundColor3 = Color3.fromRGB(150, 150, 170)}):Play()
-        end
-        return active
-    end
-    
-    return switch, click
-end
-
-local function createSlider(parent, title, min, max, default)
-    local frame = Instance.new("Frame", parent)
-    frame.Size = UDim2.new(0.96, 0, 0, 55)
+local function createToggle(parent, labelText, settingKey, order)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 30)
     frame.BackgroundTransparency = 1
-    
-    local label = Instance.new("TextLabel", frame)
-    label.Text = title
-    label.Size = UDim2.new(0.6, 0, 0, 20)
-    label.Position = UDim2.new(0, 5, 0, 4)
+    frame.LayoutOrder = order
+    frame.Parent = parent
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
     label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(170, 170, 190)
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 11
+    label.Text = labelText
+    label.TextColor3 = colors.text
+    label.TextSize = 14
     label.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local valueLabel = Instance.new("TextLabel", frame)
-    valueLabel.Text = tostring(default)
-    valueLabel.Size = UDim2.new(0.35, 0, 0, 20)
-    valueLabel.Position = UDim2.new(0.65, -5, 0, 4)
-    valueLabel.BackgroundTransparency = 1
-    valueLabel.TextColor3 = Color3.fromRGB(115, 75, 255)
-    valueLabel.Font = Enum.Font.GothamBold
-    valueLabel.TextSize = 11
-    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
-    
-    local track = Instance.new("Frame", frame)
-    track.Size = UDim2.new(1, -10, 0, 6)
-    track.Position = UDim2.new(0, 5, 0, 34)
-    track.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
-    Instance.new("UIStroke", track).Color = Color3.fromRGB(40, 40, 55)
-    
-    local fill = Instance.new("Frame", track)
-    fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
-    fill.BackgroundColor3 = Color3.fromRGB(115, 75, 255)
-    Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
-    
-    local thumb = Instance.new("TextButton", track)
-    thumb.Size = UDim2.new(0, 14, 0, 14)
-    thumb.Position = UDim2.new((default-min)/(max-min), -7, 0, -4)
-    thumb.Text = ""
-    thumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Instance.new("UICorner", thumb).CornerRadius = UDim.new(1, 0)
-    Instance.new("UIStroke", thumb).Color = Color3.fromRGB(115, 75, 255)
-    
-    return thumb, track, fill, valueLabel
+    label.Font = Enum.Font.Gotham
+    label.Parent = frame
+
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.new(0, 50, 0, 24)
+    toggle.Position = UDim2.new(1, -55, 0.5, -12)
+    toggle.BackgroundColor3 = Settings[settingKey] and colors.toggleOn or colors.toggleOff
+    toggle.Text = Settings[settingKey] and "ON" or "OFF"
+    toggle.TextColor3 = Color3.new(1,1,1)
+    toggle.TextSize = 12
+    toggle.Font = Enum.Font.GothamBold
+    toggle.BorderSizePixel = 0
+    toggle.Parent = frame
+
+    toggle.MouseButton1Click:Connect(function()
+        Settings[settingKey] = not Settings[settingKey]
+        toggle.BackgroundColor3 = Settings[settingKey] and colors.toggleOn or colors.toggleOff
+        toggle.Text = Settings[settingKey] and "ON" or "OFF"
+        -- Additional actions for specific toggles
+        if settingKey == "WallhackSurvivor" or settingKey == "WallhackKiller" or settingKey == "HookESP" then
+            updateESP()
+        end
+        if settingKey == "SpeedEnabled" then
+            applySpeed()
+        end
+        if settingKey == "AutoAim" then
+            -- toggle auto-aim loop
+        end
+        if settingKey == "AutoParry" then
+            -- toggle parry loop
+        end
+        if settingKey == "FastVault" then
+            -- toggle fast vault detection
+        end
+    end)
+
+    return toggle
 end
 
--- Generate Elements
-local aimToggleBtn, clickAim = createToggle(survView, "Lock Auto Aim (RMB/Touch)")
-local perfectToggleBtn, clickPerfect = createToggle(survView, "Auto Perfect Generator")
-local smoothThumb, smoothTrack, smoothFill, smoothValLabel = createSlider(survView, "Aimbot Smoothness", 1, 100, 30)
+local function createSlider(parent, labelText, settingKey, minVal, maxVal, step, order)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 45)
+    frame.BackgroundTransparency = 1
+    frame.LayoutOrder = order
+    frame.Parent = parent
 
-local hitboxThumb, hitboxTrack, hitboxFill, hitboxValLabel = createSlider(killerView, "Adjust Hitbox Expansion", 2, 50, 2)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 20)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = labelText .. " (" .. tostring(Settings[settingKey]) .. ")"
+    label.TextColor3 = colors.text
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Font = Enum.Font.Gotham
+    label.Parent = frame
 
-local espToggleBtn, clickEsp = createToggle(visualView, "Wallhack Framework")
-local genToggleBtn, clickGen = createToggle(visualView, "Outline Generator ESP")
-local crosshairToggleBtn, clickCrosshair = createToggle(visualView, "Hardware Crosshair Overlay")
-local brightToggleBtn, clickBright = createToggle(visualView, "Ambient Fullbright")
-local fogToggleBtn, clickFog = createToggle(visualView, "Clear World Rendering (No Fog)")
-local speedThumb, speedTrack, speedFill, speedValLabel = createSlider(visualView, "Locomotion WalkSpeed", 16, 150, 16)
+    local slider = Instance.new("Slider")
+    slider.Size = UDim2.new(1, -10, 0, 16)
+    slider.Position = UDim2.new(0, 5, 0, 22)
+    slider.MinValue = minVal
+    slider.MaxValue = maxVal
+    slider.Value = Settings[settingKey]
+    slider.Step = step
+    slider.BackgroundColor3 = Color3.fromRGB(60,60,70)
+    slider.BorderSizePixel = 0
+    slider.Parent = frame
 
-local resetToggleBtn, clickReset = createToggle(controlView, "Revert System Configuration")
-local closeToggleBtn, clickClose = createToggle(controlView, "Complete Termination")
+    slider:GetPropertyChangedSignal("Value"):Connect(function()
+        Settings[settingKey] = slider.Value
+        label.Text = labelText .. " (" .. string.format("%.1f", slider.Value) .. ")"
+        if settingKey == "SpeedValue" then applySpeed() end
+        if settingKey == "ParryRadius" then end -- no runtime update needed
+    end)
 
--- Attach ScreenGui to Core/Protected UI safely
-ScreenGui.Parent = container
+    return slider
+end
 
--- Close Handler
-CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
-closeToggleBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+local function createDropdown(parent, labelText, settingKey, options, order)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 40)
+    frame.BackgroundTransparency = 1
+    frame.LayoutOrder = order
+    frame.Parent = parent
 
--- ============================================
--- ========== INTERACT ENGINE LOOPS ===========
--- ============================================
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.TextColor3 = colors.text
+    label.TextSize = 14
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Font = Enum.Font.Gotham
+    label.Parent = frame
 
-local dragSmooth, dragHit, dragSpeed = false, false, false
-local smoothValue, hitValue, speedValue = 0.3, 2, 16
+    local dropdown = Instance.new("TextBox")
+    dropdown.Size = UDim2.new(0, 80, 0, 26)
+    dropdown.Position = UDim2.new(1, -85, 0.5, -13)
+    dropdown.BackgroundColor3 = Color3.fromRGB(50,50,60)
+    dropdown.Text = Settings[settingKey]
+    dropdown.TextColor3 = colors.text
+    dropdown.TextSize = 13
+    dropdown.Font = Enum.Font.Gotham
+    dropdown.BorderSizePixel = 0
+    dropdown.PlaceholderText = "Select"
+    dropdown.Parent = frame
 
-smoothThumb.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragSmooth = true end end)
-hitboxThumb.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragHit = true end end)
-speedThumb.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragSpeed = true end end)
+    -- Simple dropdown: click to cycle? Or we can create a popup. We'll make it a textbox that you can type or we can provide buttons. For simplicity, we'll allow typing but we'll set validation.
+    dropdown.FocusLost:Connect(function(enterPressed)
+        local val = dropdown.Text
+        if table.find(options, val) then
+            Settings[settingKey] = val
+        else
+            dropdown.Text = Settings[settingKey]
+        end
+    end)
+    return dropdown
+end
 
-UIS.InputEnded:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-        dragSmooth, dragHit, dragSpeed = false, false, false
+-- ============================================================
+-- BUILD SIDEBAR CONTENT
+-- ============================================================
+local order = 0
+
+-- Survivor section
+createCategory(scroll, "🛡 SURVIVOR", order); order = order + 1
+createToggle(scroll, "Speed+", "SpeedEnabled", order); order = order + 1
+createSlider(scroll, "Speed Value", "SpeedValue", 16, 50, 0.5, order); order = order + 1
+
+-- Auto-aim with dropdown
+local aimFrame = Instance.new("Frame")
+aimFrame.Size = UDim2.new(1, 0, 0, 30)
+aimFrame.BackgroundTransparency = 1
+aimFrame.LayoutOrder = order
+aimFrame.Parent = scroll
+order = order + 1
+
+local aimLabel = Instance.new("TextLabel")
+aimLabel.Size = UDim2.new(0.6, 0, 1, 0)
+aimLabel.Position = UDim2.new(0, 0, 0, 0)
+aimLabel.BackgroundTransparency = 1
+aimLabel.Text = "Auto-Aim"
+aimLabel.TextColor3 = colors.text
+aimLabel.TextSize = 14
+aimLabel.TextXAlignment = Enum.TextXAlignment.Left
+aimLabel.Font = Enum.Font.Gotham
+aimLabel.Parent = aimFrame
+
+local aimToggle = Instance.new("TextButton")
+aimToggle.Size = UDim2.new(0, 50, 0, 24)
+aimToggle.Position = UDim2.new(1, -55, 0.5, -12)
+aimToggle.BackgroundColor3 = Settings.AutoAim and colors.toggleOn or colors.toggleOff
+aimToggle.Text = Settings.AutoAim and "ON" or "OFF"
+aimToggle.TextColor3 = Color3.new(1,1,1)
+aimToggle.TextSize = 12
+aimToggle.Font = Enum.Font.GothamBold
+aimToggle.BorderSizePixel = 0
+aimToggle.Parent = aimFrame
+
+aimToggle.MouseButton1Click:Connect(function()
+    Settings.AutoAim = not Settings.AutoAim
+    aimToggle.BackgroundColor3 = Settings.AutoAim and colors.toggleOn or colors.toggleOff
+    aimToggle.Text = Settings.AutoAim and "ON" or "OFF"
+end)
+
+-- dropdown for aim part
+local dropdownAim = Instance.new("TextBox")
+dropdownAim.Size = UDim2.new(0, 70, 0, 22)
+dropdownAim.Position = UDim2.new(1, -130, 0.5, -11)
+dropdownAim.BackgroundColor3 = Color3.fromRGB(50,50,60)
+dropdownAim.Text = Settings.AimPart
+dropdownAim.TextColor3 = colors.text
+dropdownAim.TextSize = 12
+dropdownAim.Font = Enum.Font.Gotham
+dropdownAim.BorderSizePixel = 0
+dropdownAim.PlaceholderText = "Head/Torso"
+dropdownAim.Parent = aimFrame
+dropdownAim.FocusLost:Connect(function()
+    local val = dropdownAim.Text
+    if val == "Head" or val == "Torso" then
+        Settings.AimPart = val
+    else
+        dropdownAim.Text = Settings.AimPart
     end
 end)
 
-UIS.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton2 or i.UserInputType == Enum.UserInputType.Touch then
-        rightMousePressed = true
-    end
-end)
+createToggle(scroll, "Auto Parry", "AutoParry", order); order = order + 1
+createSlider(scroll, "Parry Radius", "ParryRadius", 5, 30, 0.5, order); order = order + 1
 
-UIS.InputEnded:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton2 or i.UserInputType == Enum.UserInputType.Touch then
-        rightMousePressed = false
-    end
-end)
+createToggle(scroll, "Fast Vault", "FastVault", order); order = order + 1
 
-RunService.RenderStepped:Connect(function()
-    local mouseX = UIS:GetMouseLocation().X
-    
-    if dragSmooth and smoothTrack then
-        local relX = math.clamp((mouseX - smoothTrack.AbsolutePosition.X) / smoothTrack.AbsoluteSize.X, 0, 1)
-        smoothValue = 0.1 + (relX * 0.9)
-        smoothThumb.Position = UDim2.new(relX, -7, 0, -4)
-        smoothFill.Size = UDim2.new(relX, 0, 1, 0)
-        smoothValLabel.Text = string.format("%.1f", smoothValue)
-        aimSmoothness = smoothValue
+-- Killer section
+createCategory(scroll, "🔪 KILLER", order); order = order + 1
+-- For killer, maybe we want toggles for wallhack and hook esp (already under esp but we can place here as well)
+-- But we'll place under ESP.
+
+-- ESP section
+createCategory(scroll, "👁 ESP", order); order = order + 1
+createToggle(scroll, "Wallhack (Survivor)", "WallhackSurvivor", order); order = order + 1
+createToggle(scroll, "Wallhack (Killer)", "WallhackKiller", order); order = order + 1
+createToggle(scroll, "Hook ESP", "HookESP", order); order = order + 1
+
+-- Visual section (maybe for future)
+createCategory(scroll, "🎨 VISUAL", order); order = order + 1
+-- Placeholder for other visual features
+
+-- Add some spacing
+local spacer = Instance.new("Frame")
+spacer.Size = UDim2.new(1, 0, 0, 10)
+spacer.BackgroundTransparency = 1
+spacer.LayoutOrder = order
+spacer.Parent = scroll
+
+-- ============================================================
+-- FEATURE IMPLEMENTATIONS
+-- ============================================================
+
+-- ---- ESP (Wallhack & Hook ESP) ----
+local espObjects = {} -- store highlights for cleanup
+
+local function clearESP()
+    for _, obj in ipairs(espObjects) do
+        if obj and obj.Parent then obj:Destroy() end
     end
-    
-    if dragHit and hitboxTrack then
-        local relX = math.clamp((mouseX - hitboxTrack.AbsolutePosition.X) / hitboxTrack.AbsoluteSize.X, 0, 1)
-        hitValue = math.floor(2 + (relX * 48))
-        hitboxThumb.Position = UDim2.new(relX, -7, 0, -4)
-        hitboxFill.Size = UDim2.new(relX, 0, 1, 0)
-        hitboxValLabel.Text = tostring(hitValue) .. " studs"
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                p.Character.HumanoidRootPart.Size = Vector3.new(hitValue, hitValue, hitValue)
-                p.Character.HumanoidRootPart.CanCollide = false
+    espObjects = {}
+end
+
+local function updateESP()
+    clearESP()
+    if not (Settings.WallhackSurvivor or Settings.WallhackKiller or Settings.HookESP) then return end
+
+    -- Helper to highlight a model with a color
+    local function highlightModel(model, color)
+        if not model or not model:IsA("Model") then return end
+        local highlight = Instance.new("Highlight")
+        highlight.FillColor = color
+        highlight.OutlineColor = color
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0.2
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlight.Parent = model
+        table.insert(espObjects, highlight)
+    end
+
+    -- Wallhack for survivors (other players)
+    if Settings.WallhackSurvivor then
+        for _, plr in ipairs(Player:GetPlayers()) do
+            if plr ~= Player and plr.Character and plr.Character:FindFirstChild("Humanoid") then
+                highlightModel(plr.Character, Color3.fromRGB(0, 255, 100)) -- green
             end
         end
     end
-    
-    if dragSpeed and speedTrack then
-        local relX = math.clamp((mouseX - speedTrack.AbsolutePosition.X) / speedTrack.AbsoluteSize.X, 0, 1)
-        speedValue = math.floor(16 + (relX * 134))
-        speedThumb.Position = UDim2.new(relX, -7, 0, -4)
-        speedFill.Size = UDim2.new(relX, 0, 1, 0)
-        speedValLabel.Text = tostring(speedValue) .. " m/s"
-        if lp.Character and lp.Character:FindFirstChild("Humanoid") then
-            lp.Character.Humanoid.WalkSpeed = speedValue
-        end
-    end
-end)
 
--- Aimbot Target Calculation
-local function getClosestTarget()
-    local mouseLoc = UIS:GetMouseLocation()
-    local closestDist = aimFOV; local closest = nil
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            local hrp = p.Character.HumanoidRootPart
-            local screenPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-            if onScreen then
-                local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mouseLoc.X, mouseLoc.Y)).Magnitude
-                if dist < closestDist then
-                    local isKiller = p.Team and (p.Team.Name:lower():find("killer") or p.Team.Name:lower():find("beast") or p.Team.Name:lower():find("murderer"))
-                    if isKiller then dist = dist - 50 end
-                    closestDist = dist; closest = p
+    -- Wallhack for killer (specific player? In Violence District, there is one killer. We need to detect who is killer.
+    -- We'll try to find a player with a certain attribute or team. For now, we'll just highlight all other players with red if killer toggle is on.
+    if Settings.WallhackKiller then
+        -- We'll assume the killer is the player with a tool that is a weapon? Or we can just highlight all other players red.
+        -- More accurate: find the player who is not on the same team (if teams exist) or who has a "Killer" tag.
+        for _, plr in ipairs(Player:GetPlayers()) do
+            if plr ~= Player and plr.Character and plr.Character:FindFirstChild("Humanoid") then
+                -- Check if this player is killer: maybe they have a certain attribute or are on team "Killers"
+                local isKiller = false
+                -- Attempt to detect via team
+                if plr.Team and plr.Team.Name == "Killers" then
+                    isKiller = true
+                end
+                -- Or check if character has a part named "Killer" or something
+                if not isKiller then
+                    -- fallback: check if they have a tool that is a weapon (e.g., knife)
+                    for _, tool in ipairs(plr.Character:GetChildren()) do
+                        if tool:IsA("Tool") and tool:FindFirstChild("Handle") then
+                            isKiller = true
+                            break
+                        end
+                    end
+                end
+                if isKiller then
+                    highlightModel(plr.Character, Color3.fromRGB(255, 0, 0)) -- red
                 end
             end
         end
     end
-    return closest
-end
 
-RunService:BindToRenderStep("AutoAimVD", Enum.RenderPriority.Camera.Value, function()
-    if aimEnabled and rightMousePressed and lp.Character and lp.Character:FindFirstChild("Humanoid") and lp.Character.Humanoid.Health > 0 then
-        local target = getClosestTarget()
-        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Character.HumanoidRootPart.Position + Vector3.new(0, 1.5, 0)), aimSmoothness)
-        end
-    end
-end)
-
--- Auto Skill Check
-local function findSkillCheckUI()
-    for _, child in pairs(pGui:GetChildren()) do
-        if child:IsA("ScreenGui") and child.Enabled and (child.Name:lower():find("skill") or child.Name:lower():find("check") or child.Name:lower():find("gen")) then
-            return child
+    -- Hook ESP (for killer) – find hooks in workspace
+    if Settings.HookESP then
+        -- Search for parts named "Hook" or with a Hook script.
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and (obj.Name:lower():find("hook") or obj:FindFirstChild("Hook")) then
+                -- Highlight the part or its parent model
+                local target = obj.Parent and obj.Parent:IsA("Model") and obj.Parent or obj
+                highlightModel(target, Color3.fromRGB(255, 200, 0)) -- gold
+            end
         end
     end
 end
 
-RunService:BindToRenderStep("VDPerfectSkillCheck", Enum.RenderPriority.Input.Value, function()
-    if not autoPerfectEnabled or tick() - lastSkillCheckTime < skillCheckCooldown then return end
-    local ui = findSkillCheckUI() if not ui then return end
-    local needle, zone
-    for _, d in pairs(ui:GetDescendants()) do
-        if d:IsA("ImageLabel") and d.Visible then
-            if d.Name:lower():find("needle") or d.Name:lower():find("pointer") then needle = d
-            elseif d.Name:lower():find("perfect") or d.Name:lower():find("zone") then zone = d end
-        end
-    end
-    if needle and zone then
-        local diff = math.abs((needle.Rotation - zone.Rotation) % 360)
-        if math.min(diff, 360 - diff) <= 12 then
-            pcall(function()
-                VIM:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                task.wait(0.02)
-                VIM:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-            end)
-            lastSkillCheckTime = tick()
+-- Update ESP periodically or on change. We'll update every few seconds and on events.
+local espUpdateTimer = 0
+RunService.Heartbeat:Connect(function(dt)
+    espUpdateTimer = espUpdateTimer + dt
+    if espUpdateTimer > 0.5 then
+        espUpdateTimer = 0
+        if Settings.WallhackSurvivor or Settings.WallhackKiller or Settings.HookESP then
+            updateESP()
+        else
+            clearESP()
         end
     end
 end)
 
--- Buttons Interaction
-aimToggleBtn.MouseButton1Click:Connect(function() aimEnabled = clickAim() end)
-perfectToggleBtn.MouseButton1Click:Connect(function() autoPerfectEnabled = clickPerfect() end)
+-- Also update when players join/leave
+Player:GetPlayers() -- to trigger initial
+Player.PlayerAdded:Connect(function() updateESP() end)
+Player.PlayerRemoving:Connect(function() updateESP() end)
+-- Also when character changes
+for _, plr in ipairs(Player:GetPlayers()) do
+    plr.CharacterAdded:Connect(function() updateESP() end)
+end
+-- We'll also update when our own character changes for speed etc.
 
-espToggleBtn.MouseButton1Click:Connect(function()
-    wallhackActive = clickEsp()
-    if wallhackActive then
-        setupESPForAllPlayers()
-    else
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= lp and p.Character then
-                local h = p.Character:FindFirstChild("AdiESP")
-                if h then h:Destroy() end
-                local label = p.Character:FindFirstChild("ESP_Label")
-                if label then label:Destroy() end
+-- ---- Speed+ ----
+local function applySpeed()
+    local char = Player.Character
+    if not char then return end
+    local humanoid = char:FindFirstChild("Humanoid")
+    if humanoid then
+        if Settings.SpeedEnabled then
+            humanoid.WalkSpeed = Settings.SpeedValue
+        else
+            humanoid.WalkSpeed = 16 -- default
+        end
+    end
+end
+
+-- Monitor character changes
+Player.CharacterAdded:Connect(function(char)
+    local humanoid = char:WaitForChild("Humanoid")
+    -- apply speed when character spawns
+    applySpeed()
+    -- Also when speed value changes, we already have slider event
+end)
+
+-- Also check every frame to keep speed if something resets it
+RunService.Heartbeat:Connect(function()
+    if Settings.SpeedEnabled then
+        local char = Player.Character
+        if char then
+            local humanoid = char:FindFirstChild("Humanoid")
+            if humanoid and humanoid.WalkSpeed ~= Settings.SpeedValue then
+                humanoid.WalkSpeed = Settings.SpeedValue
             end
         end
     end
 end)
 
-genToggleBtn.MouseButton1Click:Connect(function()
-    genEspActive = clickGen()
-    for _, o in pairs(workspace:GetDescendants()) do
-        if (o.Name:lower():find("generator") or o.Name:lower():find("gen")) and (o:IsA("Model") or o:IsA("BasePart")) then
-            local h = o:FindFirstChild("GenESP") or Instance.new("Highlight", o)
-            h.Name = "GenESP"; h.Enabled = genEspActive; h.OutlineTransparency = 0
-            h.OutlineColor = Color3.fromRGB(0, 230, 140); h.FillTransparency = 1
+-- ---- Auto-Aim (lock to killer) ----
+local function getKillerCharacter()
+    -- Find the killer player (opponent)
+    for _, plr in ipairs(Player:GetPlayers()) do
+        if plr ~= Player then
+            local char = plr.Character
+            if char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+                -- Check if it's killer (same logic as wallhack)
+                local isKiller = false
+                if plr.Team and plr.Team.Name == "Killers" then isKiller = true end
+                if not isKiller then
+                    for _, tool in ipairs(char:GetChildren()) do
+                        if tool:IsA("Tool") and tool:FindFirstChild("Handle") then
+                            isKiller = true; break
+                        end
+                    end
+                end
+                if isKiller then
+                    return char
+                end
+            end
         end
     end
-end)
+    return nil
+end
 
-local crosshairDot = Instance.new("Frame", ScreenGui)
-crosshairDot.Size = UDim2.new(0, 4, 0, 4)
-crosshairDot.Position = UDim2.new(0.5, -2, 0.5, -2)
-crosshairDot.BackgroundColor3 = Color3.fromRGB(0, 255, 180)
-crosshairDot.Visible = false
-Instance.new("UICorner", crosshairDot).CornerRadius = UDim.new(1, 0)
-crosshairToggleBtn.MouseButton1Click:Connect(function() crosshairDot.Visible = clickCrosshair() end)
-
-brightToggleBtn.MouseButton1Click:Connect(function()
-    if clickBright() then
-        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-    else
-        Lighting.Ambient = origAmbient
-        Lighting.OutdoorAmbient = origOutdoorAmbient
-    end
-end)
-
-fogToggleBtn.MouseButton1Click:Connect(function()
-    if clickFog() then
-        Lighting.FogStart = 999999
-        Lighting.FogEnd = 999999
-    else
-        Lighting.FogStart = origFogStart
-        Lighting.FogEnd = origFogEnd
-    end
-end)
-
--- ESP Refresh Loop
+-- Auto-aim loop
 RunService.RenderStepped:Connect(function()
-    if wallhackActive then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= lp then
-                updateESPLabel(p)
-            end
+    if not Settings.AutoAim then return end
+    local killerChar = getKillerCharacter()
+    if not killerChar then return end
+    local localChar = Player.Character
+    if not localChar then return end
+    local localHumanoid = localChar:FindFirstChild("Humanoid")
+    if not localHumanoid or localHumanoid.Health <= 0 then return end
+
+    local targetPart
+    if Settings.AimPart == "Head" then
+        targetPart = killerChar:FindFirstChild("Head")
+    else -- Torso
+        targetPart = killerChar:FindFirstChild("HumanoidRootPart") or killerChar:FindFirstChild("Torso")
+    end
+    if not targetPart then return end
+
+    -- Make the local character face the target (rotate on Y axis)
+    local lookVector = (targetPart.Position - localChar.HumanoidRootPart.Position).Unit
+    local newCFrame = CFrame.new(localChar.HumanoidRootPart.Position, Vector3.new(targetPart.Position.X, localChar.HumanoidRootPart.Position.Y, targetPart.Position.Z))
+    -- Smoothly rotate? We'll directly set for instant lock
+    localChar.HumanoidRootPart.CFrame = newCFrame
+end)
+
+-- ---- Auto Parry ----
+local function detectKillerAttack()
+    -- We need to detect when the killer is attacking. 
+    -- We'll look for animation tracks on the killer's humanoid that contain "attack" or "slash".
+    local killerChar = getKillerCharacter()
+    if not killerChar then return false end
+    local humanoid = killerChar:FindFirstChild("Humanoid")
+    if not humanoid then return false end
+    for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+        if track.Animation and track.Animation.Name and 
+           (track.Animation.Name:lower():find("attack") or track.Animation.Name:lower():find("slash") or track.Animation.Name:lower():find("hit")) then
+            return true
+        end
+    end
+    return false
+end
+
+-- Parry execution (simulate keypress for parry, e.g., 'F' key)
+local function performParry()
+    -- Simulate pressing F key (common for parry)
+    UserInputService:SetKeyDown(Enum.KeyCode.F)  -- Not all executors support this; fallback to mouse/keyboard API
+    -- Alternative: use VirtualInputManager if available (for Delta)
+    -- We'll try to use the input simulation from the executor.
+    -- Using the standard Roblox API: we can fire the InputBegan event if we have the service.
+    -- But many executors provide a function like `keypress` or `mouse1click`. We'll try to use a custom function.
+    -- For Delta, we can use `syn.input` or `keypress`. We'll attempt both.
+    local success, err = pcall(function()
+        -- Try using syn.input if available (Synapse X / Delta)
+        if syn and syn.input then
+            syn.input(Enum.KeyCode.F)
+        elseif keypress then
+            keypress(Enum.KeyCode.F)
+        else
+            -- Fallback: fire the input event manually (may not work)
+            local inputService = game:GetService("UserInputService")
+            local args = {
+                [1] = Enum.KeyCode.F,
+                [2] = Enum.UserInputState.Begin,
+                [3] = false,
+                [4] = nil,
+                [5] = nil,
+                [6] = nil
+            }
+            inputService:FireInputBegan(args)
+        end
+    end)
+    if not success then
+        -- Silent fail
+    end
+end
+
+RunService.Heartbeat:Connect(function()
+    if not Settings.AutoParry then return end
+    local killerChar = getKillerCharacter()
+    if not killerChar then return end
+    local localChar = Player.Character
+    if not localChar then return end
+    local humanoid = localChar:FindFirstChild("Humanoid")
+    if not humanoid or humanoid.Health <= 0 then return end
+
+    -- Check distance
+    local distance = (killerChar.HumanoidRootPart.Position - localChar.HumanoidRootPart.Position).Magnitude
+    if distance > Settings.ParryRadius then return end
+
+    -- Check if killer is attacking
+    if detectKillerAttack() then
+        performParry()
+    end
+end)
+
+-- ---- Fast Vault ----
+-- We'll detect when the local character is performing a vault animation (usually by animation name)
+local function isVaulting()
+    local char = Player.Character
+    if not char then return false end
+    local humanoid = char:FindFirstChild("Humanoid")
+    if not humanoid then return false end
+    for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+        if track.Animation and track.Animation.Name and 
+           (track.Animation.Name:lower():find("vault") or track.Animation.Name:lower():find("climb") or track.Animation.Name:lower():find("window")) then
+            return true
+        end
+    end
+    return false
+end
+
+-- When fast vault enabled, set walkspeed high during vault
+RunService.Heartbeat:Connect(function()
+    if not Settings.FastVault then 
+        -- If we previously set speed high, revert if not enabled
+        return 
+    end
+    local char = Player.Character
+    if not char then return end
+    local humanoid = char:FindFirstChild("Humanoid")
+    if not humanoid then return end
+    if isVaulting() then
+        humanoid.WalkSpeed = 50 -- fast vault speed
+    else
+        -- Restore to speed+ if enabled, else default
+        if Settings.SpeedEnabled then
+            humanoid.WalkSpeed = Settings.SpeedValue
+        else
+            humanoid.WalkSpeed = 16
         end
     end
 end)
 
--- Initial ESP Trigger
-setupESPForAllPlayers()
+-- ============================================================
+-- INITIAL SETUP
+-- ============================================================
+-- Apply speed at start
+wait(1) -- wait for character
+applySpeed()
 
--- System Reset
-resetToggleBtn.MouseButton1Click:Connect(function()
-    if clickReset() then
-        Lighting.FogStart = origFogStart
-        Lighting.FogEnd = origFogEnd
-        Lighting.Ambient = origAmbient
-        Lighting.OutdoorAmbient = origOutdoorAmbient
-        if lp.Character and lp.Character:FindFirstChild("Humanoid") then
-            lp.Character.Humanoid.WalkSpeed = 16
-        end
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                p.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 2)
-            end
-        end
-        aimEnabled = false
-        autoPerfectEnabled = false
-        wallhackActive = false
-        genEspActive = false
-        crosshairDot.Visible = false
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= lp and p.Character then
-                local h = p.Character:FindFirstChild("AdiESP")
-                if h then h:Destroy() end
-                local label = p.Character:FindFirstChild("ESP_Label")
-                if label then label:Destroy() end
-            end
-        end
-        smoothThumb.Position = UDim2.new(0.3, -7, 0, -4)
-        smoothFill.Size = UDim2.new(0.3, 0, 1, 0)
-        smoothValLabel.Text = "0.3"
-        hitboxThumb.Position = UDim2.new(0, -7, 0, -4)
-        hitboxFill.Size = UDim2.new(0, 0, 1, 0)
-        hitboxValLabel.Text = "2 studs"
-        speedThumb.Position = UDim2.new(0, -7, 0, -4)
-        speedFill.Size = UDim2.new(0, 0, 1, 0)
-        speedValLabel.Text = "16 m/s"
+-- Update ESP initially
+wait(0.5)
+updateESP()
+
+print("[ADI] Script loaded successfully. Enjoy, Butter!")
+
+-- ============================================================
+-- KEYBIND: Toggle GUI with Insert key (optional)
+-- ============================================================
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.Insert then
+        toggleBtn:Click()
     end
 end)
-
-print("🔥 ADI V33 | DELTA FULLY FIXED & EXECUTABLE")
