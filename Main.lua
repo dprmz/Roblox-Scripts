@@ -1,5 +1,5 @@
 -- [[ ADI PROJECT - V33 VIOLENCE DISTRICT - PREMIUM SIDEBAR V2 ]] --
--- DELTA EXECUTOR OPTIMIZED by CAT Shadow
+-- DELTA EXECUTOR OPTIMIZED by CAT Shadow (Mobile & PC Support)
 
 if not game:IsLoaded() then game.Loaded:Wait() end
 local lp = game:GetService("Players").LocalPlayer
@@ -13,7 +13,7 @@ local Lighting = game:GetService("Lighting")
 
 -- Detect Delta for performance tweaks
 local isDelta = (getexecutorname and getexecutorname() == "Delta")
-if isDelta then
+if isDelta and setfpscap then
     setfpscap(60) -- Delta's own function if available
 end
 
@@ -39,7 +39,6 @@ local origOutdoorAmbient = Lighting.OutdoorAmbient
 -- ========== ESP FUNCTIONS ===================
 -- ============================================
 
--- Fungsi untuk membuat ESP Label
 local function createESPLabel(player)
     if not player or not player.Character then return nil end
     local char = player.Character
@@ -87,7 +86,6 @@ local function createESPLabel(player)
     return billboard
 end
 
--- Fungsi untuk update ESP label
 local function updateESPLabel(player)
     if not player or not player.Character then return end
     local billboard = player.Character:FindFirstChild("ESP_Label")
@@ -127,7 +125,6 @@ local function updateESPLabel(player)
     textLabel.Text = player.Name .. "\n" .. statusIcon .. distText .. "m"
 end
 
--- Fungsi untuk setup ESP untuk semua player
 local function setupESPForAllPlayers()
     for _, p in pairs(game.Players:GetPlayers()) do
         if p ~= lp and p.Character then
@@ -205,7 +202,7 @@ Header.BackgroundTransparency = 1
 
 local dragging, dragStart, startPos
 Header.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true; dragStart = input.Position; startPos = Main.Position
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then dragging = false end
@@ -213,7 +210,7 @@ Header.InputBegan:Connect(function(input)
     end
 end)
 Header.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+    if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragging then
         local delta = input.Position - dragStart
         Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
@@ -237,7 +234,7 @@ CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1, 0)
 
 -- ============================================
--- ========== FIX: SIDEBAR LAYOUT HIERARCHY ===
+-- ========== SIDEBAR LAYOUT HIERARCHY ===
 -- ============================================
 
 local Sidebar = Instance.new("Frame", Main)
@@ -440,23 +437,16 @@ end
 -- ========== POPULATING INTERFACE ============
 -- ============================================
 
--- Tab 1: Survivor
-local aimToggleBtn, clickAim = createToggle(survView, "Lock Auto Aim (RMB)")
+local aimToggleBtn, clickAim = createToggle(survView, "Lock Auto Aim (RMB/Touch)")
 local perfectToggleBtn, clickPerfect = createToggle(survView, "Auto Perfect Generator")
 local smoothThumb, smoothTrack, smoothFill, smoothValLabel = createSlider(survView, "Aimbot Smoothness", 1, 100, 30)
-
--- Tab 2: Killer
 local hitboxThumb, hitboxTrack, hitboxFill, hitboxValLabel = createSlider(killerView, "Adjust Hitbox Expansion", 2, 50, 2)
-
--- Tab 3: Visuals
 local espToggleBtn, clickEsp = createToggle(visualView, "Wallhack Framework")
 local genToggleBtn, clickGen = createToggle(visualView, "Outline Generator ESP")
 local crosshairToggleBtn, clickCrosshair = createToggle(visualView, "Hardware Crosshair Overlay")
 local brightToggleBtn, clickBright = createToggle(visualView, "Ambient Fullbright")
 local fogToggleBtn, clickFog = createToggle(visualView, "Clear World Rendering (No Fog)")
 local speedThumb, speedTrack, speedFill, speedValLabel = createSlider(visualView, "Locomotion WalkSpeed", 16, 150, 16)
-
--- Tab 4: Controls
 local resetToggleBtn, clickReset = createToggle(controlView, "Revert System Configuration")
 local closeToggleBtn, clickClose = createToggle(controlView, "Complete Termination")
 
@@ -492,13 +482,30 @@ CloseBtn.MouseButton1Click:Connect(function() toggleGuiWindow(false) end)
 local dragSmooth, dragHit, dragSpeed = false, false, false
 local smoothValue, hitValue, speedValue = 0.3, 2, 16
 
+-- Delta Mobile Support: Mouse1Down + Touch
 smoothThumb.MouseButton1Down:Connect(function() dragSmooth = true end)
+smoothThumb.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch then dragSmooth = true end end)
 hitboxThumb.MouseButton1Down:Connect(function() dragHit = true end)
+hitboxThumb.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch then dragHit = true end end)
 speedThumb.MouseButton1Down:Connect(function() dragSpeed = true end)
+speedThumb.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch then dragSpeed = true end end)
 
 UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragSmooth, dragHit, dragSpeed = false, false, false
+    end
+end)
+
+-- Mobile friendly input state mapping
+UIS.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.Touch then
+        rightMousePressed = true
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.Touch then
+        rightMousePressed = false
     end
 end)
 
@@ -611,7 +618,6 @@ end)
 aimToggleBtn.MouseButton1Click:Connect(function() aimEnabled = clickAim() end)
 perfectToggleBtn.MouseButton1Click:Connect(function() autoPerfectEnabled = clickPerfect() end)
 
--- ESP Toggle
 espToggleBtn.MouseButton1Click:Connect(function()
     wallhackActive = clickEsp()
     if wallhackActive then
@@ -670,7 +676,7 @@ end)
 closeToggleBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
 -- ============================================
--- ========== ESP UPDATE LOOP (FIXED) =========
+-- ========== ESP UPDATE LOOP =================
 -- ============================================
 
 RunService.RenderStepped:Connect(function()
@@ -683,7 +689,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Initial ESP setup
 setupESPForAllPlayers()
 
 -- ============================================
@@ -692,28 +697,23 @@ setupESPForAllPlayers()
 
 resetToggleBtn.MouseButton1Click:Connect(function()
     if clickReset() then
-        -- Reset lighting
         Lighting.FogStart = origFogStart
         Lighting.FogEnd = origFogEnd
         Lighting.Ambient = origAmbient
         Lighting.OutdoorAmbient = origOutdoorAmbient
-        -- Reset walkspeed
         if lp.Character and lp.Character:FindFirstChild("Humanoid") then
             lp.Character.Humanoid.WalkSpeed = 16
         end
-        -- Reset hitboxes
         for _, p in pairs(game.Players:GetPlayers()) do
             if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                 p.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 2)
             end
         end
-        -- Turn off toggles visually (just reset variables)
         aimEnabled = false
         autoPerfectEnabled = false
         wallhackActive = false
         genEspActive = false
         dot.Visible = false
-        -- Reapply ESP off
         for _, p in pairs(game.Players:GetPlayers()) do
             if p ~= lp and p.Character then
                 local h = p.Character:FindFirstChild("AdiESP")
@@ -722,7 +722,6 @@ resetToggleBtn.MouseButton1Click:Connect(function()
                 if label then label:Destroy() end
             end
         end
-        -- Reset sliders UI (optional)
         smoothThumb.Position = UDim2.new(0.3, -7, 0, -4)
         smoothFill.Size = UDim2.new(0.3, 0, 1, 0)
         smoothValLabel.Text = "0.3"
