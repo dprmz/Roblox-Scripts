@@ -1,8 +1,10 @@
 -- [[ ADI PROJECT - V33 VIOLENCE DISTRICT - PREMIUM SIDEBAR V2 ]] --
--- DELTA EXECUTOR OPTIMIZED by CAT Shadow (Mobile & PC Support)
+-- DELTA EXECUTOR FIXED & OPTIMIZED VERSION
 
 if not game:IsLoaded() then game.Loaded:Wait() end
-local lp = game:GetService("Players").LocalPlayer
+
+local Players = game:GetService("Players")
+local lp = Players.LocalPlayer
 local pGui = lp:WaitForChild("PlayerGui")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -11,14 +13,29 @@ local Camera = workspace.CurrentCamera
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
 
--- Detect Delta for performance tweaks
+-- Detect Delta
 local isDelta = (getexecutorname and getexecutorname() == "Delta")
 if isDelta and setfpscap then
-    setfpscap(60) -- Delta's own function if available
+    pcall(function() setfpscap(60) end)
+end
+
+-- Safely get GUI Container
+local function getUIContainer()
+    local success, target = pcall(function()
+        return (gethui and gethui()) or game:GetService("CoreGui")
+    end)
+    if success and target then return target end
+    return lp:WaitForChild("PlayerGui")
+end
+
+-- Remove Existing GUI Instance
+local container = getUIContainer()
+if container:FindFirstChild("AdiV33_VD_SidebarUI") then
+    container:FindFirstChild("AdiV33_VD_SidebarUI"):Destroy()
 end
 
 -- ============================================
--- ========== INITIAL CORE VARIABLES ==========
+-- ========== CORE VARIABLES ==================
 -- ============================================
 local aimEnabled = false
 local aimSmoothness = 0.3
@@ -27,7 +44,7 @@ local rightMousePressed = false
 local autoPerfectEnabled = false
 local lastSkillCheckTime = 0
 local skillCheckCooldown = 0.3
-local wallhackActive = true -- AKTIF OTOMATIS
+local wallhackActive = true
 local genEspActive = false
 
 local origFogStart = Lighting.FogStart
@@ -56,16 +73,19 @@ local function createESPLabel(player)
     billboard.MaxDistance = 1000
     billboard.StudsOffset = Vector3.new(0, 3, 0)
     billboard.Enabled = true
-    billboard.Parent = char
     
-    local bgFrame = Instance.new("Frame", billboard)
+    local bgFrame = Instance.new("Frame")
     bgFrame.Name = "Background"
     bgFrame.Size = UDim2.new(1, 0, 1, 0)
     bgFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     bgFrame.BackgroundTransparency = 0.5
-    Instance.new("UICorner", bgFrame).CornerRadius = UDim.new(0, 6)
+    bgFrame.Parent = billboard
     
-    local textLabel = Instance.new("TextLabel", bgFrame)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = bgFrame
+    
+    local textLabel = Instance.new("TextLabel")
     textLabel.Name = "TextLabel"
     textLabel.Size = UDim2.new(1, 0, 1, 0)
     textLabel.BackgroundTransparency = 1
@@ -75,14 +95,12 @@ local function createESPLabel(player)
     textLabel.TextStrokeTransparency = 0.2
     textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     textLabel.TextYAlignment = Enum.TextYAlignment.Center
+    textLabel.Parent = bgFrame
     
     local isKiller = player.Team and (player.Team.Name:lower():find("killer") or player.Team.Name:lower():find("beast") or player.Team.Name:lower():find("murderer"))
-    if isKiller then
-        textLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-    else
-        textLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
-    end
+    textLabel.TextColor3 = isKiller and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(100, 200, 255)
     
+    billboard.Parent = char
     return billboard
 end
 
@@ -126,7 +144,7 @@ local function updateESPLabel(player)
 end
 
 local function setupESPForAllPlayers()
-    for _, p in pairs(game.Players:GetPlayers()) do
+    for _, p in pairs(Players:GetPlayers()) do
         if p ~= lp and p.Character then
             local highlight = p.Character:FindFirstChild("AdiESP")
             if highlight then highlight:Destroy() end
@@ -137,9 +155,9 @@ local function setupESPForAllPlayers()
     
     if not wallhackActive then return end
     
-    for _, p in pairs(game.Players:GetPlayers()) do
+    for _, p in pairs(Players:GetPlayers()) do
         if p ~= lp and p.Character then
-            local h = Instance.new("Highlight", p.Character)
+            local h = Instance.new("Highlight")
             h.Name = "AdiESP"
             h.Enabled = true
             h.OutlineTransparency = 0
@@ -147,6 +165,7 @@ local function setupESPForAllPlayers()
             local isKiller = p.Team and (p.Team.Name:lower():find("killer") or p.Team.Name:lower():find("beast"))
             h.OutlineColor = isKiller and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(15, 45, 125)
             h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            h.Parent = p.Character
             
             local label = createESPLabel(p)
             if label then
@@ -158,31 +177,22 @@ local function setupESPForAllPlayers()
 end
 
 -- ============================================
--- ========== MAIN INTERFACE DESIGN ==========
+-- ========== MAIN INTERFACE DESIGN ===========
 -- ============================================
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AdiV33_VD_SidebarUI"
 ScreenGui.ResetOnSpawn = false
 
--- Delta-safe UI parent
-local success, parent = pcall(function()
-    local ui = (gethui and gethui()) or game:GetService("CoreGui")
-    return ui
-end)
-if success and parent then
-    ScreenGui.Parent = parent
-else
-    ScreenGui.Parent = game:GetService("CoreGui")
-end
-
-local Main = Instance.new("Frame", ScreenGui)
+local Main = Instance.new("Frame")
+Main.Name = "MainFrame"
 Main.BackgroundColor3 = Color3.fromRGB(13, 13, 17)
 Main.Position = UDim2.new(0.5, -260, 0.5, -200)
 Main.Size = UDim2.new(0, 520, 0, 400)
 Main.BackgroundTransparency = 0.05
 Main.ClipsDescendants = true
 Main.Active = true
+Main.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner", Main)
 MainCorner.CornerRadius = UDim.new(0, 14)
@@ -200,15 +210,19 @@ local Header = Instance.new("Frame", Main)
 Header.Size = UDim2.new(1, 0, 0, 50)
 Header.BackgroundTransparency = 1
 
+-- Dragging Engine
 local dragging, dragStart, startPos
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true; dragStart = input.Position; startPos = Main.Position
+        dragging = true
+        dragStart = input.Position
+        startPos = Main.Position
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then dragging = false end
         end)
     end
 end)
+
 Header.InputChanged:Connect(function(input)
     if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragging then
         local delta = input.Position - dragStart
@@ -233,10 +247,7 @@ CloseBtn.Position = UDim2.new(1, -25, 0, 19)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1, 0)
 
--- ============================================
--- ========== SIDEBAR LAYOUT HIERARCHY ===
--- ============================================
-
+-- Sidebar Layout
 local Sidebar = Instance.new("Frame", Main)
 Sidebar.Size = UDim2.new(0, 140, 1, -50)
 Sidebar.Position = UDim2.new(0, 0, 0, 50)
@@ -316,23 +327,19 @@ local function createTab(name, order)
     return view
 end
 
--- Generate Pages
+-- Pages
 local survView = createTab("Survivor", 1)
 local killerView = createTab("Killer", 2)
 local visualView = createTab("Visuals", 3)
 local controlView = createTab("Controls", 4)
 
--- Set Default State
 tabs["Survivor"].Btn.TextColor3 = Color3.fromRGB(115, 75, 255)
 tabs["Survivor"].Btn.BackgroundTransparency = 0.95
 tabs["Survivor"].Btn.BackgroundColor3 = Color3.fromRGB(115, 75, 255)
 survView.Visible = true
 currentActiveView = survView
 
--- ============================================
--- ========== INTERACTIVE UTILITIES ===========
--- ============================================
-
+-- UI Builders
 local function createToggle(parent, text)
     local frame = Instance.new("Frame", parent)
     frame.Size = UDim2.new(0.96, 0, 0, 42)
@@ -433,78 +440,55 @@ local function createSlider(parent, title, min, max, default)
     return thumb, track, fill, valueLabel
 end
 
--- ============================================
--- ========== POPULATING INTERFACE ============
--- ============================================
-
+-- Generate Elements
 local aimToggleBtn, clickAim = createToggle(survView, "Lock Auto Aim (RMB/Touch)")
 local perfectToggleBtn, clickPerfect = createToggle(survView, "Auto Perfect Generator")
 local smoothThumb, smoothTrack, smoothFill, smoothValLabel = createSlider(survView, "Aimbot Smoothness", 1, 100, 30)
+
 local hitboxThumb, hitboxTrack, hitboxFill, hitboxValLabel = createSlider(killerView, "Adjust Hitbox Expansion", 2, 50, 2)
+
 local espToggleBtn, clickEsp = createToggle(visualView, "Wallhack Framework")
 local genToggleBtn, clickGen = createToggle(visualView, "Outline Generator ESP")
 local crosshairToggleBtn, clickCrosshair = createToggle(visualView, "Hardware Crosshair Overlay")
 local brightToggleBtn, clickBright = createToggle(visualView, "Ambient Fullbright")
 local fogToggleBtn, clickFog = createToggle(visualView, "Clear World Rendering (No Fog)")
 local speedThumb, speedTrack, speedFill, speedValLabel = createSlider(visualView, "Locomotion WalkSpeed", 16, 150, 16)
+
 local resetToggleBtn, clickReset = createToggle(controlView, "Revert System Configuration")
 local closeToggleBtn, clickClose = createToggle(controlView, "Complete Termination")
 
--- ============================================
--- ========== WINDOW TOGGLE ANIMATION =========
--- ============================================
+-- Attach ScreenGui to Core/Protected UI safely
+ScreenGui.Parent = container
 
-local guiVisible = true
-local function toggleGuiWindow(state)
-    guiVisible = state
-    if guiVisible then
-        Main.Visible = true
-        TweenService:Create(Main, TweenInfo.new(0.35, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 520, 0, 400),
-            BackgroundTransparency = 0.05
-        }):Play()
-    else
-        TweenService:Create(Main, TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 520, 0, 0),
-            BackgroundTransparency = 1
-        }):Play()
-        task.wait(0.25)
-        if not guiVisible then Main.Visible = false end
-    end
-end
-
-CloseBtn.MouseButton1Click:Connect(function() toggleGuiWindow(false) end)
+-- Close Handler
+CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+closeToggleBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
 -- ============================================
--- ========== SLIDERS ENGINE PROCESSING =======
+-- ========== INTERACT ENGINE LOOPS ===========
 -- ============================================
 
 local dragSmooth, dragHit, dragSpeed = false, false, false
 local smoothValue, hitValue, speedValue = 0.3, 2, 16
 
--- Delta Mobile Support: Mouse1Down + Touch
-smoothThumb.MouseButton1Down:Connect(function() dragSmooth = true end)
-smoothThumb.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch then dragSmooth = true end end)
-hitboxThumb.MouseButton1Down:Connect(function() dragHit = true end)
-hitboxThumb.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch then dragHit = true end end)
-speedThumb.MouseButton1Down:Connect(function() dragSpeed = true end)
-speedThumb.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch then dragSpeed = true end end)
+smoothThumb.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragSmooth = true end end)
+hitboxThumb.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragHit = true end end)
+speedThumb.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragSpeed = true end end)
 
-UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+UIS.InputEnded:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
         dragSmooth, dragHit, dragSpeed = false, false, false
     end
 end)
 
--- Mobile friendly input state mapping
-UIS.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.Touch then
+UIS.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton2 or i.UserInputType == Enum.UserInputType.Touch then
         rightMousePressed = true
     end
 end)
 
-UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.Touch then
+UIS.InputEnded:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton2 or i.UserInputType == Enum.UserInputType.Touch then
         rightMousePressed = false
     end
 end)
@@ -527,7 +511,7 @@ RunService.RenderStepped:Connect(function()
         hitboxThumb.Position = UDim2.new(relX, -7, 0, -4)
         hitboxFill.Size = UDim2.new(relX, 0, 1, 0)
         hitboxValLabel.Text = tostring(hitValue) .. " studs"
-        for _, p in pairs(game.Players:GetPlayers()) do
+        for _, p in pairs(Players:GetPlayers()) do
             if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                 p.Character.HumanoidRootPart.Size = Vector3.new(hitValue, hitValue, hitValue)
                 p.Character.HumanoidRootPart.CanCollide = false
@@ -547,14 +531,11 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ============================================
--- ========== AUTO AIM ENGINE =================
--- ============================================
-
+-- Aimbot Target Calculation
 local function getClosestTarget()
     local mouseLoc = UIS:GetMouseLocation()
     local closestDist = aimFOV; local closest = nil
-    for _, p in pairs(game.Players:GetPlayers()) do
+    for _, p in pairs(Players:GetPlayers()) do
         if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local hrp = p.Character.HumanoidRootPart
             local screenPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
@@ -580,10 +561,7 @@ RunService:BindToRenderStep("AutoAimVD", Enum.RenderPriority.Camera.Value, funct
     end
 end)
 
--- ============================================
--- ========== AUTO PERFECT SKILL CHECK ========
--- ============================================
-
+-- Auto Skill Check
 local function findSkillCheckUI()
     for _, child in pairs(pGui:GetChildren()) do
         if child:IsA("ScreenGui") and child.Enabled and (child.Name:lower():find("skill") or child.Name:lower():find("check") or child.Name:lower():find("gen")) then
@@ -605,16 +583,17 @@ RunService:BindToRenderStep("VDPerfectSkillCheck", Enum.RenderPriority.Input.Val
     if needle and zone then
         local diff = math.abs((needle.Rotation - zone.Rotation) % 360)
         if math.min(diff, 360 - diff) <= 12 then
-            VIM:SendKeyEvent(true, Enum.KeyCode.Space, false, game); task.wait(0.02)
-            VIM:SendKeyEvent(false, Enum.KeyCode.Space, false, game); lastSkillCheckTime = tick()
+            pcall(function()
+                VIM:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                task.wait(0.02)
+                VIM:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+            end)
+            lastSkillCheckTime = tick()
         end
     end
 end)
 
--- ============================================
--- ========== CORE BUTTON HANDLING ============
--- ============================================
-
+-- Buttons Interaction
 aimToggleBtn.MouseButton1Click:Connect(function() aimEnabled = clickAim() end)
 perfectToggleBtn.MouseButton1Click:Connect(function() autoPerfectEnabled = clickPerfect() end)
 
@@ -623,7 +602,7 @@ espToggleBtn.MouseButton1Click:Connect(function()
     if wallhackActive then
         setupESPForAllPlayers()
     else
-        for _, p in pairs(game.Players:GetPlayers()) do
+        for _, p in pairs(Players:GetPlayers()) do
             if p ~= lp and p.Character then
                 local h = p.Character:FindFirstChild("AdiESP")
                 if h then h:Destroy() end
@@ -645,13 +624,13 @@ genToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-local dot = Instance.new("Frame", ScreenGui)
-dot.Size = UDim2.new(0, 4, 0, 4)
-dot.Position = UDim2.new(0.5, -2, 0.5, -2)
-dot.BackgroundColor3 = Color3.fromRGB(0, 255, 180)
-dot.Visible = false
-Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
-crosshairToggleBtn.MouseButton1Click:Connect(function() dot.Visible = clickCrosshair() end)
+local crosshairDot = Instance.new("Frame", ScreenGui)
+crosshairDot.Size = UDim2.new(0, 4, 0, 4)
+crosshairDot.Position = UDim2.new(0.5, -2, 0.5, -2)
+crosshairDot.BackgroundColor3 = Color3.fromRGB(0, 255, 180)
+crosshairDot.Visible = false
+Instance.new("UICorner", crosshairDot).CornerRadius = UDim.new(1, 0)
+crosshairToggleBtn.MouseButton1Click:Connect(function() crosshairDot.Visible = clickCrosshair() end)
 
 brightToggleBtn.MouseButton1Click:Connect(function()
     if clickBright() then
@@ -673,15 +652,10 @@ fogToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-closeToggleBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
-
--- ============================================
--- ========== ESP UPDATE LOOP =================
--- ============================================
-
+-- ESP Refresh Loop
 RunService.RenderStepped:Connect(function()
     if wallhackActive then
-        for _, p in pairs(game.Players:GetPlayers()) do
+        for _, p in pairs(Players:GetPlayers()) do
             if p ~= lp then
                 updateESPLabel(p)
             end
@@ -689,12 +663,10 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- Initial ESP Trigger
 setupESPForAllPlayers()
 
--- ============================================
--- ========== RESET TO DEFAULTS ===============
--- ============================================
-
+-- System Reset
 resetToggleBtn.MouseButton1Click:Connect(function()
     if clickReset() then
         Lighting.FogStart = origFogStart
@@ -704,7 +676,7 @@ resetToggleBtn.MouseButton1Click:Connect(function()
         if lp.Character and lp.Character:FindFirstChild("Humanoid") then
             lp.Character.Humanoid.WalkSpeed = 16
         end
-        for _, p in pairs(game.Players:GetPlayers()) do
+        for _, p in pairs(Players:GetPlayers()) do
             if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                 p.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 2)
             end
@@ -713,8 +685,8 @@ resetToggleBtn.MouseButton1Click:Connect(function()
         autoPerfectEnabled = false
         wallhackActive = false
         genEspActive = false
-        dot.Visible = false
-        for _, p in pairs(game.Players:GetPlayers()) do
+        crosshairDot.Visible = false
+        for _, p in pairs(Players:GetPlayers()) do
             if p ~= lp and p.Character then
                 local h = p.Character:FindFirstChild("AdiESP")
                 if h then h:Destroy() end
@@ -734,4 +706,4 @@ resetToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-print("🔥 ADI V33 | DELTA READY | CAT SHADOW APPROVED")
+print("🔥 ADI V33 | DELTA FULLY FIXED & EXECUTABLE")
