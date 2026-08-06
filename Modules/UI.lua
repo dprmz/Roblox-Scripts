@@ -83,7 +83,7 @@ function UI:CreateSidebar(Config)
     end)
 
     -- ==========================================
-    -- 3. SIDEBAR & NAVIGATION (FIXED POSITION)
+    -- 3. SIDEBAR & NAVIGATION (Not Too Bold)
     -- ==========================================
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 130, 1, 0)
@@ -113,7 +113,6 @@ function UI:CreateSidebar(Config)
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = sidebar
 
-    -- Wadah Navigasi yang ukurannya dikunci pas di bawah title sidebar
     local navContainer = Instance.new("Frame")
     navContainer.Size = UDim2.new(1, 0, 1, -50)
     navContainer.Position = UDim2.new(0, 0, 0, 50)
@@ -145,12 +144,16 @@ function UI:CreateSidebar(Config)
         for name, btn in pairs(navButtons) do
             local stroke = btn:FindFirstChildOfClass("UIStroke")
             if name == tabName then
-                btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+                -- State Active: Menggunakan Gotham biasa agar tidak terlalu tebal/mengganggu
+                btn.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
                 btn.TextColor3 = Color3.fromRGB(255, 170, 0)
+                btn.Font = Enum.Font.GothamSemibold
                 if stroke then stroke.Transparency = 0 end
             else
+                -- State Inactive
                 btn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
                 btn.TextColor3 = Color3.fromRGB(150, 150, 150)
+                btn.Font = Enum.Font.Gotham
                 if stroke then stroke.Transparency = 1 end
             end
         end
@@ -162,12 +165,12 @@ function UI:CreateSidebar(Config)
         btn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
         btn.Text = icon .. "  " .. name
         btn.TextColor3 = Color3.fromRGB(150, 150, 150)
-        btn.Font = Enum.Font.GothamBold
+        btn.Font = Enum.Font.Gotham
         btn.TextSize = 13
         btn.TextXAlignment = Enum.TextXAlignment.Left
         btn.LayoutOrder = order
         btn.AutoButtonColor = false
-        btn.Parent = navContainer -- Dimasukkan ke dalam navContainer yang posisinya aman
+        btn.Parent = navContainer
 
         local padding = Instance.new("UIPadding")
         padding.PaddingLeft = UDim.new(0, 12)
@@ -210,20 +213,44 @@ function UI:CreateSidebar(Config)
     end
 
     -- ==========================================
-    -- 5. COMPONENT BUILDERS (UI Elements)
+    -- 5. CARD GROUPING SYSTEM (1 Card untuk Multiple Fitur)
     -- ==========================================
-    local function createToggle(parent, labelText, settingKey, order)
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(1, 0, 0, 35)
-        frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-        frame.LayoutOrder = order
-        frame.Parent = parent
+    local function createCard(parent, height, order)
+        local card = Instance.new("Frame")
+        card.Size = UDim2.new(1, 0, 0, height)
+        card.BackgroundColor3 = Color3.fromRGB(22, 22, 30)
+        card.LayoutOrder = order
+        card.Parent = parent
 
-        Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 8)
+        corner.Parent = card
+
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 6)
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = card
+
+        local padding = Instance.new("UIPadding")
+        padding.PaddingTop = UDim.new(0, 8)
+        padding.PaddingBottom = UDim.new(0, 8)
+        padding.PaddingLeft = UDim.new(0, 10)
+        padding.PaddingRight = UDim.new(0, 10)
+        padding.Parent = card
+
+        return card
+    end
+
+    local function createToggleInCard(card, labelText, settingKey, order)
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(1, 0, 0, 30)
+        frame.BackgroundTransparency = 1
+        frame.LayoutOrder = order
+        frame.Parent = card
 
         local label = Instance.new("TextLabel")
         label.Size = UDim2.new(0.6, 0, 1, 0)
-        label.Position = UDim2.new(0, 10, 0, 0)
         label.BackgroundTransparency = 1
         label.Text = labelText
         label.TextColor3 = Color3.fromRGB(220, 220, 220)
@@ -233,12 +260,12 @@ function UI:CreateSidebar(Config)
         label.Parent = frame
 
         local toggle = Instance.new("TextButton")
-        toggle.Size = UDim2.new(0, 60, 0, 24)
-        toggle.Position = UDim2.new(1, -70, 0.5, -12)
+        toggle.Size = UDim2.new(0, 55, 0, 22)
+        toggle.Position = UDim2.new(1, -55, 0.5, -11)
         toggle.BackgroundColor3 = Config[settingKey] and Color3.fromRGB(0, 200, 80) or Color3.fromRGB(200, 50, 50)
         toggle.Text = Config[settingKey] and "ON" or "OFF"
         toggle.TextColor3 = Color3.new(1,1,1)
-        toggle.TextSize = 12
+        toggle.TextSize = 11
         toggle.Font = Enum.Font.GothamBold
         toggle.Parent = frame
         Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 4)
@@ -250,18 +277,15 @@ function UI:CreateSidebar(Config)
         end)
     end
 
-    local function createSlider(parent, labelText, settingKey, minVal, maxVal, step, order)
+    local function createSliderInCard(card, labelText, settingKey, minVal, maxVal, step, order)
         local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(1, 0, 0, 50)
-        frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+        frame.Size = UDim2.new(1, 0, 0, 40)
+        frame.BackgroundTransparency = 1
         frame.LayoutOrder = order
-        frame.Parent = parent
-
-        Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
+        frame.Parent = card
 
         local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, -20, 0, 20)
-        label.Position = UDim2.new(0, 10, 0, 5)
+        label.Size = UDim2.new(1, 0, 0, 18)
         label.BackgroundTransparency = 1
         label.Text = labelText .. " : " .. tostring(Config[settingKey])
         label.TextColor3 = Color3.fromRGB(220, 220, 220)
@@ -271,9 +295,9 @@ function UI:CreateSidebar(Config)
         label.Parent = frame
 
         local sliderBtn = Instance.new("TextButton")
-        sliderBtn.Size = UDim2.new(1, -20, 0, 12)
-        sliderBtn.Position = UDim2.new(0, 10, 0, 28)
-        sliderBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        sliderBtn.Size = UDim2.new(1, 0, 0, 10)
+        sliderBtn.Position = UDim2.new(0, 0, 0, 22)
+        sliderBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
         sliderBtn.Text = ""
         sliderBtn.AutoButtonColor = false
         sliderBtn.Parent = frame
@@ -307,17 +331,15 @@ function UI:CreateSidebar(Config)
         end)
     end
 
-    local function createDropdown(parent, labelText, settingKey, options, order)
+    local function createDropdownInCard(card, labelText, settingKey, options, order)
         local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(1, 0, 0, 35)
-        frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+        frame.Size = UDim2.new(1, 0, 0, 30)
+        frame.BackgroundTransparency = 1
         frame.LayoutOrder = order
-        frame.Parent = parent
-        Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
+        frame.Parent = card
 
         local label = Instance.new("TextLabel")
         label.Size = UDim2.new(0.5, 0, 1, 0)
-        label.Position = UDim2.new(0, 10, 0, 0)
         label.BackgroundTransparency = 1
         label.Text = labelText
         label.TextColor3 = Color3.fromRGB(220, 220, 220)
@@ -327,9 +349,9 @@ function UI:CreateSidebar(Config)
         label.Parent = frame
 
         local dropdown = Instance.new("TextBox")
-        dropdown.Size = UDim2.new(0, 80, 0, 24)
-        dropdown.Position = UDim2.new(1, -90, 0.5, -12)
-        dropdown.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        dropdown.Size = UDim2.new(0, 80, 0, 22)
+        dropdown.Position = UDim2.new(1, -80, 0.5, -11)
+        dropdown.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
         dropdown.Text = Config[settingKey]
         dropdown.TextColor3 = Color3.fromRGB(255, 170, 0)
         dropdown.TextSize = 12
@@ -348,7 +370,7 @@ function UI:CreateSidebar(Config)
     end
 
     -- ==========================================
-    -- 6. BUILD TABS & NAVIGATION BUTTONS
+    -- 6. BUILD TABS & GROUPED CARDS
     -- ==========================================
     CreateNavButton("Survivor", "🛡️", 1)
     CreateNavButton("Killer", "🔪", 2)
@@ -360,24 +382,35 @@ function UI:CreateSidebar(Config)
     local tabESP = CreateTab("ESP")
     local tabVisual = CreateTab("Visual")
 
-    -- Isi Konten Survivor
-    createToggle(tabSurvivor, "Speed+", "SpeedEnabled", 1)
-    createSlider(tabSurvivor, "Speed Value", "SpeedValue", 16, 50, 0.5, 2)
-    createToggle(tabSurvivor, "Auto Aim", "AutoAim", 3)
-    createDropdown(tabSurvivor, "Aim Part", "AimPart", {"Head", "Torso"}, 4)
-    createToggle(tabSurvivor, "Auto Parry", "AutoParry", 5)
-    createSlider(tabSurvivor, "Parry Radius", "ParryRadius", 5, 30, 0.5, 6)
-    createToggle(tabSurvivor, "Fast Vault", "FastVault", 7)
+    -- CARD 1: Speed (Toggle + Slider) di Tab Survivor
+    local cardSpeed = createCard(tabSurvivor, 85, 1)
+    createToggleInCard(cardSpeed, "Speed+", "SpeedEnabled", 1)
+    createSliderInCard(cardSpeed, "Speed Value", "SpeedValue", 16, 50, 0.5, 2)
 
-    -- Isi Konten ESP
-    createToggle(tabESP, "Wallhack (Survivor)", "WallhackSurvivor", 1)
-    createToggle(tabESP, "Wallhack (Killer)", "WallhackKiller", 2)
-    createToggle(tabESP, "Hook ESP", "HookESP", 3)
+    -- CARD 2: Aim (Toggle + Dropdown) di Tab Survivor
+    local cardAim = createCard(tabSurvivor, 75, 2)
+    createToggleInCard(cardAim, "Auto Aim", "AutoAim", 1)
+    createDropdownInCard(cardAim, "Aim Part", "AimPart", {"Head", "Torso"}, 2)
 
-    -- Set Default Tab yang aktif pertama kali
+    -- CARD 3: Parry (Toggle + Slider) di Tab Survivor
+    local cardParry = createCard(tabSurvivor, 85, 3)
+    createToggleInCard(cardParry, "Auto Parry", "AutoParry", 1)
+    createSliderInCard(cardParry, "Parry Radius", "ParryRadius", 5, 30, 0.5, 2)
+
+    -- CARD 4: Fast Vault (Single Toggle Card) di Tab Survivor
+    local cardVault = createCard(tabSurvivor, 45, 4)
+    createToggleInCard(cardVault, "Fast Vault", "FastVault", 1)
+
+    -- ESP Tab Cards
+    local cardESP = createCard(tabESP, 115, 1)
+    createToggleInCard(cardESP, "Wallhack (Survivor)", "WallhackSurvivor", 1)
+    createToggleInCard(cardESP, "Wallhack (Killer)", "WallhackKiller", 2)
+    createToggleInCard(cardESP, "Hook ESP", "HookESP", 3)
+
+    -- Set Default Tab
     SwitchTab("Survivor")
 
-    -- Keybind (Insert) untuk PC
+    -- Keybind (Insert)
     UserInputService.InputBegan:Connect(function(input, processed)
         if processed then return end
         if input.KeyCode == Enum.KeyCode.Insert then
