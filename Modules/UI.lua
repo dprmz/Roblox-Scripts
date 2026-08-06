@@ -1,6 +1,3 @@
-Berikut adalah kode UI.lua yang sepenuhnya mempertahankan desain Glassmorphism sebelumnya, dengan 2 perbaikan sesuai permintaan:
- * Ukuran Jendela Makin Ringkas: Diperkecil dari 560x340 menjadi 440x280 (proporsional, rapi, dan tidak memakan area layar).
- * Tombol Floating Bebas (Draggable): Tombol pemanggil (ToggleUI) sekarang bisa digeser/ditarik bebas ke posisi mana saja di layar (Mobile/PC), serta memiliki proteksi klik agar tidak sengaja terbuka saat tombol sedang digeser.
 -- UI.lua (Glassmorphism Redesign - Compact Size & Draggable Floating Button)
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -705,4 +702,3 @@ function UI:CreateSidebar(Config)
 end
 
 return UI
-
