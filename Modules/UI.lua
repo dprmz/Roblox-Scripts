@@ -1,7 +1,9 @@
+```lua
 -- UI.lua
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local UI = {}
 
@@ -19,14 +21,6 @@ function UI:CreateSidebar(Config)
     local bgColor = Color3.fromRGB(12, 12, 16)
     local bgTransparency = 0.25
 
-    -- Fungsi helper untuk mengambil nilai Config dengan aman (mencegah error nil)
-    local function getConfig(key, default)
-        if Config and Config[key] ~= nil then
-            return Config[key]
-        end
-        return default
-    end
-
     -- ==========================================
     -- 1. TOGGLE BUTTON (Floating)
     -- ==========================================
@@ -35,7 +29,7 @@ function UI:CreateSidebar(Config)
     toggleBtn.Position = UDim2.new(0, 15, 0, 15)
     toggleBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
     toggleBtn.BackgroundTransparency = 0.2
-    toggleBtn.Image = "rbxassetid://6031090793"
+    toggleBtn.Image = "rbxassetid://6031090793" -- ikon roda gigi
     toggleBtn.Parent = screenGui
 
     local toggleCorner = Instance.new("UICorner")
@@ -99,13 +93,14 @@ function UI:CreateSidebar(Config)
     end)
 
     -- ==========================================
-    -- 4. TOP BAR (Header)
+    -- 4. TOP BAR (Header mirip gambar)
     -- ==========================================
     local topBar = Instance.new("Frame")
     topBar.Size = UDim2.new(1, 0, 0, 52)
     topBar.BackgroundTransparency = 1
     topBar.Parent = mainWindow
 
+    -- Logo / Title
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(0, 200, 1, 0)
     titleLabel.Position = UDim2.new(0, 18, 0, 0)
@@ -117,6 +112,7 @@ function UI:CreateSidebar(Config)
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = topBar
 
+    -- Dev tag
     local devLabel = Instance.new("TextLabel")
     devLabel.Size = UDim2.new(0, 100, 0, 20)
     devLabel.Position = UDim2.new(0, 130, 0.5, -10)
@@ -128,6 +124,7 @@ function UI:CreateSidebar(Config)
     devLabel.TextXAlignment = Enum.TextXAlignment.Left
     devLabel.Parent = topBar
 
+    -- Game badge (Violence district Remake)
     local badgeContainer = Instance.new("Frame")
     badgeContainer.Size = UDim2.new(0, 200, 1, 0)
     badgeContainer.Position = UDim2.new(1, -210, 0, 0)
@@ -143,7 +140,9 @@ function UI:CreateSidebar(Config)
     badge1.TextSize = 11
     badge1.Font = Enum.Font.GothamBold
     badge1.Parent = badgeContainer
-    Instance.new("UICorner", badge1).CornerRadius = UDim.new(1, 0)
+    local c1 = Instance.new("UICorner")
+    c1.CornerRadius = UDim.new(1, 0)
+    c1.Parent = badge1
 
     local badge2 = Instance.new("TextLabel")
     badge2.Size = UDim2.new(0, 65, 0, 26)
@@ -154,8 +153,11 @@ function UI:CreateSidebar(Config)
     badge2.TextSize = 11
     badge2.Font = Enum.Font.GothamBold
     badge2.Parent = badgeContainer
-    Instance.new("UICorner", badge2).CornerRadius = UDim.new(1, 0)
+    local c2 = Instance.new("UICorner")
+    c2.CornerRadius = UDim.new(1, 0)
+    c2.Parent = badge2
 
+    -- Close Button
     local closeBtn = Instance.new("TextButton")
     closeBtn.Size = UDim2.new(0, 28, 0, 28)
     closeBtn.Position = UDim2.new(1, -38, 0.5, -14)
@@ -174,7 +176,7 @@ function UI:CreateSidebar(Config)
     end)
 
     -- ==========================================
-    -- 5. SIDEBAR NAVIGASI
+    -- 5. SIDEBAR NAVIGASI (Modern, Transparan)
     -- ==========================================
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 170, 1, -52)
@@ -190,6 +192,7 @@ function UI:CreateSidebar(Config)
     sideStroke.Transparency = 0.3
     sideStroke.Parent = sidebar
 
+    -- Nav Container
     local navContainer = Instance.new("Frame")
     navContainer.Size = UDim2.new(1, 0, 1, -70)
     navContainer.Position = UDim2.new(0, 0, 0, 10)
@@ -202,17 +205,27 @@ function UI:CreateSidebar(Config)
     navLayout.SortOrder = Enum.SortOrder.LayoutOrder
     navLayout.Parent = navContainer
 
+    -- User Profile di bawah sidebar
     local userProfile = Instance.new("Frame")
     userProfile.Size = UDim2.new(1, -16, 0, 50)
     userProfile.Position = UDim2.new(0, 8, 1, -60)
     userProfile.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
     userProfile.BackgroundTransparency = 0.2
     userProfile.Parent = sidebar
-    Instance.new("UICorner", userProfile).CornerRadius = UDim.new(0, 8)
+    local upCorner = Instance.new("UICorner")
+    upCorner.CornerRadius = UDim.new(0, 8)
+    upCorner.Parent = userProfile
+
+    local userIcon = Instance.new("ImageLabel")
+    userIcon.Size = UDim2.new(0, 24, 0, 24)
+    userIcon.Position = UDim2.new(0, 10, 0.5, -12)
+    userIcon.BackgroundTransparency = 1
+    userIcon.Image = "rbxassetid://6023420986"
+    userIcon.Parent = userProfile
 
     local userLbl = Instance.new("TextLabel")
-    userLbl.Size = UDim2.new(1, -20, 1, 0)
-    userLbl.Position = UDim2.new(0, 10, 0, 0)
+    userLbl.Size = UDim2.new(1, -40, 1, 0)
+    userLbl.Position = UDim2.new(0, 40, 0, 0)
     userLbl.BackgroundTransparency = 1
     userLbl.Text = player.Name
     userLbl.TextColor3 = Color3.fromRGB(220, 220, 220)
@@ -230,6 +243,7 @@ function UI:CreateSidebar(Config)
     contentArea.BackgroundTransparency = 1
     contentArea.Parent = mainWindow
 
+    -- Tab & Navigation system
     local tabs = {}
     local navButtons = {}
 
@@ -273,7 +287,9 @@ function UI:CreateSidebar(Config)
         padding.PaddingLeft = UDim.new(0, 14)
         padding.Parent = btn
 
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 8)
+        corner.Parent = btn
 
         local stroke = Instance.new("UIStroke")
         stroke.Color = primaryColor
@@ -309,7 +325,7 @@ function UI:CreateSidebar(Config)
     end
 
     -- ==========================================
-    -- 7. UI BUILDERS (Dengan Pengaman Nilai Config)
+    -- 7. UI BUILDERS (Card, Toggle, Slider, Dropdown)
     -- ==========================================
     local function createSectionHeader(parent, text, order)
         local lbl = Instance.new("TextLabel")
@@ -332,7 +348,9 @@ function UI:CreateSidebar(Config)
         card.LayoutOrder = order
         card.Parent = parent
 
-        Instance.new("UICorner", card).CornerRadius = UDim.new(0, 10)
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 10)
+        corner.Parent = card
 
         local stroke = Instance.new("UIStroke")
         stroke.Color = primaryColor
@@ -357,8 +375,6 @@ function UI:CreateSidebar(Config)
     end
 
     local function createToggleInCard(card, labelText, settingKey, order)
-        local initialVal = getConfig(settingKey, false)
-
         local frame = Instance.new("Frame")
         frame.Size = UDim2.new(1, 0, 0, 32)
         frame.BackgroundTransparency = 1
@@ -378,24 +394,26 @@ function UI:CreateSidebar(Config)
         local toggle = Instance.new("TextButton")
         toggle.Size = UDim2.new(0, 54, 0, 26)
         toggle.Position = UDim2.new(1, -54, 0.5, -13)
-        toggle.BackgroundColor3 = initialVal and primaryColor or Color3.fromRGB(45, 45, 55)
+        toggle.BackgroundColor3 = Config[settingKey] and primaryColor or Color3.fromRGB(45, 45, 55)
         toggle.Text = ""
         toggle.AutoButtonColor = false
         toggle.Parent = frame
-        Instance.new("UICorner", toggle).CornerRadius = UDim.new(1, 0)
+        local tCorner = Instance.new("UICorner")
+        tCorner.CornerRadius = UDim.new(1, 0)
+        tCorner.Parent = toggle
 
         local indicator = Instance.new("Frame")
         indicator.Size = UDim2.new(0, 18, 0, 18)
-        indicator.Position = initialVal and UDim2.new(1, -22, 0.5, -9) or UDim2.new(0, 4, 0.5, -9)
+        indicator.Position = Config[settingKey] and UDim2.new(1, -22, 0.5, -9) or UDim2.new(0, 4, 0.5, -9)
         indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         indicator.Parent = toggle
-        Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
+        local indCorner = Instance.new("UICorner")
+        indCorner.CornerRadius = UDim.new(1, 0)
+        indCorner.Parent = indicator
 
         toggle.MouseButton1Click:Connect(function()
-            if Config then
-                Config[settingKey] = not getConfig(settingKey, false)
-            end
-            local isActive = getConfig(settingKey, false)
+            Config[settingKey] = not Config[settingKey]
+            local isActive = Config[settingKey]
             toggle.BackgroundColor3 = isActive and primaryColor or Color3.fromRGB(45, 45, 55)
             TweenService:Create(indicator, TweenInfo.new(0.2), {
                 Position = isActive and UDim2.new(1, -22, 0.5, -9) or UDim2.new(0, 4, 0.5, -9)
@@ -404,8 +422,6 @@ function UI:CreateSidebar(Config)
     end
 
     local function createSliderInCard(card, labelText, settingKey, minVal, maxVal, step, order)
-        local initialVal = getConfig(settingKey, minVal)
-
         local frame = Instance.new("Frame")
         frame.Size = UDim2.new(1, 0, 0, 44)
         frame.BackgroundTransparency = 1
@@ -415,7 +431,7 @@ function UI:CreateSidebar(Config)
         local label = Instance.new("TextLabel")
         label.Size = UDim2.new(1, 0, 0, 20)
         label.BackgroundTransparency = 1
-        label.Text = labelText .. " : " .. tostring(initialVal)
+        label.Text = labelText .. " : " .. tostring(Config[settingKey])
         label.TextColor3 = Color3.fromRGB(240, 240, 240)
         label.TextSize = 13
         label.TextXAlignment = Enum.TextXAlignment.Left
@@ -429,14 +445,18 @@ function UI:CreateSidebar(Config)
         sliderBtn.Text = ""
         sliderBtn.AutoButtonColor = false
         sliderBtn.Parent = frame
-        Instance.new("UICorner", sliderBtn).CornerRadius = UDim.new(1, 0)
+        local sCorner = Instance.new("UICorner")
+        sCorner.CornerRadius = UDim.new(1, 0)
+        sCorner.Parent = sliderBtn
 
-        local startPercent = math.clamp((initialVal - minVal) / (maxVal - minVal), 0, 1)
+        local startPercent = math.clamp((Config[settingKey] - minVal) / (maxVal - minVal), 0, 1)
         local sliderFill = Instance.new("Frame")
         sliderFill.Size = UDim2.new(startPercent, 0, 1, 0)
         sliderFill.BackgroundColor3 = primaryColor
         sliderFill.Parent = sliderBtn
-        Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
+        local sfCorner = Instance.new("UICorner")
+        sfCorner.CornerRadius = UDim.new(1, 0)
+        sfCorner.Parent = sliderFill
 
         local draggingSlider = false
         sliderBtn.InputBegan:Connect(function(input)
@@ -456,9 +476,7 @@ function UI:CreateSidebar(Config)
                 local newValue = math.floor((minVal + (maxVal - minVal) * percent) / step + 0.5) * step
                 newValue = math.clamp(newValue, minVal, maxVal)
 
-                if Config then
-                    Config[settingKey] = newValue
-                end
+                Config[settingKey] = newValue
                 sliderFill.Size = UDim2.new(percent, 0, 1, 0)
                 local fmt = step % 1 == 0 and "%.0f" or "%.1f"
                 label.Text = labelText .. " : " .. string.format(fmt, newValue)
@@ -466,8 +484,57 @@ function UI:CreateSidebar(Config)
         end)
     end
 
+    local function createDropdownInCard(card, labelText, settingKey, options, order)
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(1, 0, 0, 32)
+        frame.BackgroundTransparency = 1
+        frame.LayoutOrder = order
+        frame.Parent = card
+
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(0.5, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = labelText
+        label.TextColor3 = Color3.fromRGB(240, 240, 240)
+        label.TextSize = 13
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Font = Enum.Font.GothamSemibold
+        label.Parent = frame
+
+        local dropdown = Instance.new("TextBox")
+        dropdown.Size = UDim2.new(0, 100, 0, 26)
+        dropdown.Position = UDim2.new(1, -100, 0.5, -13)
+        dropdown.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        dropdown.Text = Config[settingKey]
+        dropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
+        dropdown.TextSize = 12
+        dropdown.Font = Enum.Font.GothamBold
+        dropdown.Parent = frame
+        local dCorner = Instance.new("UICorner")
+        dCorner.CornerRadius = UDim.new(0, 6)
+        dCorner.Parent = dropdown
+
+        dropdown.FocusLost:Connect(function()
+            local val = dropdown.Text
+            local isValid = false
+            for _, opt in ipairs(options) do
+                if val:lower() == opt:lower() then
+                    val = opt
+                    isValid = true
+                    break
+                end
+            end
+            if isValid then
+                Config[settingKey] = val
+                dropdown.Text = val
+            else
+                dropdown.Text = Config[settingKey]
+            end
+        end)
+    end
+
     -- ==========================================
-    -- 8. BUILD TABS & CONTENT
+    -- 8. BUILD TABS & CONTENT (Sesuai gambar)
     -- ==========================================
     CreateNavButton("About", "ℹ️", 1)
     CreateNavButton("Generators", "⚡", 2)
@@ -485,7 +552,7 @@ function UI:CreateSidebar(Config)
     local tabMisc = CreateTab("Misc")
     local tabEmotes = CreateTab("Emotes")
 
-    -- Tab About
+    -- ===== Tab About =====
     createSectionHeader(tabAbout, "About H4xScripts", 1)
     local aboutCard = createCard(tabAbout, 80, 2)
     local aboutLbl = Instance.new("TextLabel")
@@ -499,41 +566,42 @@ function UI:CreateSidebar(Config)
     aboutLbl.TextYAlignment = Enum.TextYAlignment.Center
     aboutLbl.Parent = aboutCard
 
-    -- Tab Generators
+    -- ===== Tab Generators =====
     createSectionHeader(tabGenerators, "Generators", 1)
     local genCard = createCard(tabGenerators, 80, 2)
     createToggleInCard(genCard, "Anti-Fail Generator", "AntiFailGen", 1)
     createToggleInCard(genCard, "Auto Perfect Skill Check", "AutoPerfect", 2)
 
-    -- Tab Main Stuff
+    -- ===== Tab Main Stuff =====
     createSectionHeader(tabMain, "Main Stuff", 1)
     local mainCard = createCard(tabMain, 110, 2)
     createToggleInCard(mainCard, "Auto Parry", "AutoParry", 1)
     createToggleInCard(mainCard, "Speed Boost", "SpeedBoost", 2)
     createSliderInCard(mainCard, "Range", "RangeValue", 5, 50, 1, 3)
 
-    -- Tab Visuals
+    -- ===== Tab Visuals =====
     createSectionHeader(tabVisuals, "Visuals", 1)
     local visCard = createCard(tabVisuals, 110, 2)
     createToggleInCard(visCard, "Wallhack (Survivor)", "WallhackS", 1)
     createToggleInCard(visCard, "Wallhack (Killer)", "WallhackK", 2)
     createToggleInCard(visCard, "Hook ESP", "HookESP", 3)
 
-    -- Tab Others
+    -- ===== Tab Others =====
     createSectionHeader(tabOthers, "Others", 1)
     local otherCard = createCard(tabOthers, 80, 2)
     createToggleInCard(otherCard, "Auto Vault", "AutoVault", 1)
     createToggleInCard(otherCard, "No Recoil", "NoRecoil", 2)
 
-    -- Tab Misc
+    -- ===== Tab Misc =====
     createSectionHeader(tabMisc, "Misc", 1)
     local miscCard = createCard(tabMisc, 80, 2)
     createToggleInCard(miscCard, "LocalPlayer", "LocalPlayer", 1)
     createToggleInCard(miscCard, "Range Check", "RangeCheck", 2)
 
-    -- Tab Emotes
+    -- ===== Tab Emotes =====
     createSectionHeader(tabEmotes, "Emotes", 1)
     local emoteCard = createCard(tabEmotes, 80, 2)
+    -- Dropdown untuk pilih emote
     local frameEmote = Instance.new("Frame")
     frameEmote.Size = UDim2.new(1, 0, 0, 32)
     frameEmote.BackgroundTransparency = 1
@@ -559,7 +627,9 @@ function UI:CreateSidebar(Config)
     emoteDropdown.TextSize = 12
     emoteDropdown.Font = Enum.Font.GothamBold
     emoteDropdown.Parent = frameEmote
-    Instance.new("UICorner", emoteDropdown).CornerRadius = UDim.new(0, 6)
+    local edCorner = Instance.new("UICorner")
+    edCorner.CornerRadius = UDim.new(0, 6)
+    edCorner.Parent = emoteDropdown
 
     local playBtn = Instance.new("TextButton")
     playBtn.Size = UDim2.new(0, 60, 0, 26)
@@ -570,10 +640,13 @@ function UI:CreateSidebar(Config)
     playBtn.TextSize = 12
     playBtn.Font = Enum.Font.GothamBold
     playBtn.Parent = frameEmote
-    Instance.new("UICorner", playBtn).CornerRadius = UDim.new(0, 6)
+    local pbCorner = Instance.new("UICorner")
+    pbCorner.CornerRadius = UDim.new(0, 6)
+    pbCorner.Parent = playBtn
 
     playBtn.MouseButton1Click:Connect(function()
         print("Playing emote: " .. emoteDropdown.Text)
+        -- Di sini logika play emote
     end)
 
     -- ==========================================
@@ -581,6 +654,7 @@ function UI:CreateSidebar(Config)
     -- ==========================================
     SwitchTab("About")
 
+    -- Toggle UI dengan Insert
     UserInputService.InputBegan:Connect(function(input, processed)
         if processed then return end
         if input.KeyCode == Enum.KeyCode.Insert then
@@ -592,4 +666,4 @@ function UI:CreateSidebar(Config)
 end
 
 return UI
-
+```
