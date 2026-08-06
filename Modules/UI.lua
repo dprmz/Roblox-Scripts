@@ -35,11 +35,11 @@ function UI:CreateSidebar(Config)
     -- 2. MAIN WINDOW (Modern Rounded UI)
     -- ==========================================
     local mainWindow = Instance.new("Frame")
-    mainWindow.Size = UDim2.new(0, 450, 0, 320)
-    mainWindow.Position = UDim2.new(0.5, -225, 0.5, -160)
+    mainWindow.Size = UDim2.new(0, 480, 0, 320)
+    mainWindow.Position = UDim2.new(0.5, -240, 0.5, -160)
     mainWindow.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     mainWindow.BorderSizePixel = 0
-    mainWindow.Visible = false -- Default tertutup, buka pakai toggle
+    mainWindow.Visible = true -- Langsung tampil saat dieksekusi
     mainWindow.Parent = screenGui
 
     local windowCorner = Instance.new("UICorner")
@@ -95,7 +95,7 @@ function UI:CreateSidebar(Config)
     sidebarCorner.CornerRadius = UDim.new(0, 10)
     sidebarCorner.Parent = sidebar
 
-    -- Fix sudut kanan sidebar agar menyatu dengan konten
+    -- Penutup sudut agar sisi kanan sidebar tetap lurus
     local sidebarFix = Instance.new("Frame")
     sidebarFix.Size = UDim2.new(0, 10, 1, 0)
     sidebarFix.Position = UDim2.new(1, -10, 0, 0)
@@ -104,26 +104,27 @@ function UI:CreateSidebar(Config)
     sidebarFix.Parent = sidebar
 
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 50)
+    title.Size = UDim2.new(1, 0, 0, 45)
     title.BackgroundTransparency = 1
     title.Text = " ☣ ADI"
     title.TextColor3 = Color3.fromRGB(255, 170, 0)
-    title.TextSize = 22
+    title.TextSize = 20
     title.Font = Enum.Font.GothamBlack
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = sidebar
 
+    -- Wadah tombol navigasi di sidebar
+    local navContainer = Instance.new("Frame")
+    navContainer.Size = UDim2.new(1, 0, 1, -50)
+    navContainer.Position = UDim2.new(0, 0, 0, 50)
+    navContainer.BackgroundTransparency = 1
+    navContainer.Parent = sidebar
+
     local navLayout = Instance.new("UIListLayout")
-    navLayout.Padding = UDim.new(0, 5)
+    navLayout.Padding = UDim.new(0, 6)
     navLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     navLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    navLayout.Parent = sidebar
-
-    local spacer = Instance.new("Frame")
-    spacer.Size = UDim2.new(1, 0, 0, 50)
-    spacer.BackgroundTransparency = 1
-    spacer.LayoutOrder = 0
-    spacer.Parent = sidebar
+    navLayout.Parent = navContainer
 
     -- ==========================================
     -- 4. CONTENT AREA & TAB SYSTEM
@@ -138,29 +139,28 @@ function UI:CreateSidebar(Config)
     local navButtons = {}
 
     local function SwitchTab(tabName)
-        -- Sembunyikan semua tab & reset warna tombol
         for name, tab in pairs(tabs) do
             tab.Visible = (name == tabName)
         end
         for name, btn in pairs(navButtons) do
+            local stroke = btn:FindFirstChildOfClass("UIStroke")
             if name == tabName then
-                -- State: Active
+                -- State: Active (Menyala)
                 btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
                 btn.TextColor3 = Color3.fromRGB(255, 170, 0)
-                btn.UIStroke.Color = Color3.fromRGB(255, 170, 0)
-                btn.UIStroke.Transparency = 0
+                if stroke then stroke.Transparency = 0 end
             else
-                -- State: Inactive
+                -- State: Inactive (Redup)
                 btn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
                 btn.TextColor3 = Color3.fromRGB(150, 150, 150)
-                btn.UIStroke.Transparency = 1
+                if stroke then stroke.Transparency = 1 end
             end
         end
     end
 
     local function CreateNavButton(name, icon, order)
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0, 110, 0, 35)
+        btn.Size = UDim2.new(0, 115, 0, 36)
         btn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
         btn.Text = icon .. "  " .. name
         btn.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -169,10 +169,10 @@ function UI:CreateSidebar(Config)
         btn.TextXAlignment = Enum.TextXAlignment.Left
         btn.LayoutOrder = order
         btn.AutoButtonColor = false
-        btn.Parent = sidebar
+        btn.Parent = navContainer
 
         local padding = Instance.new("UIPadding")
-        padding.PaddingLeft = UDim.new(0, 10)
+        padding.PaddingLeft = UDim.new(0, 12)
         padding.Parent = btn
 
         local corner = Instance.new("UICorner")
@@ -181,12 +181,14 @@ function UI:CreateSidebar(Config)
 
         local stroke = Instance.new("UIStroke")
         stroke.Color = Color3.fromRGB(255, 170, 0)
-        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        stroke.Transparency = 1 -- Default sembunyi
+        stroke.Thickness = 1
+        stroke.Transparency = 1
         stroke.Parent = btn
 
         navButtons[name] = btn
-        btn.MouseButton1Click:Connect(function() SwitchTab(name) end)
+        btn.MouseButton1Click:Connect(function() 
+            SwitchTab(name) 
+        end)
     end
 
     local function CreateTab(name)
@@ -195,13 +197,13 @@ function UI:CreateSidebar(Config)
         scroll.Position = UDim2.new(0, 10, 0, 10)
         scroll.BackgroundTransparency = 1
         scroll.BorderSizePixel = 0
-        scroll.ScrollBarThickness = 2
+        scroll.ScrollBarThickness = 3
         scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
         scroll.Visible = false
         scroll.Parent = contentArea
 
         local layout = Instance.new("UIListLayout")
-        layout.Padding = UDim.new(0, 10)
+        layout.Padding = UDim.new(0, 8)
         layout.SortOrder = Enum.SortOrder.LayoutOrder
         layout.Parent = scroll
 
@@ -210,7 +212,7 @@ function UI:CreateSidebar(Config)
     end
 
     -- ==========================================
-    -- 5. COMPONENT BUILDERS (Untuk isi Tab)
+    -- 5. COMPONENT BUILDERS (UI Elements)
     -- ==========================================
     local function createToggle(parent, labelText, settingKey, order)
         local frame = Instance.new("Frame")
@@ -338,7 +340,7 @@ function UI:CreateSidebar(Config)
         Instance.new("UICorner", dropdown).CornerRadius = UDim.new(0, 4)
 
         dropdown.FocusLost:Connect(function()
-            local val = dropdown.Text
+            val = dropdown.Text
             local isValid = false
             for _, opt in ipairs(options) do
                 if val:lower() == opt:lower() then val = opt isValid = true break end
@@ -348,21 +350,19 @@ function UI:CreateSidebar(Config)
     end
 
     -- ==========================================
-    -- 6. INITIALIZE TABS & FEATURES
+    -- 6. BUILD TABS & NAVIGATION BUTTONS
     -- ==========================================
-    -- Buat Navigasi (Icon + Nama)
     CreateNavButton("Survivor", "🛡️", 1)
     CreateNavButton("Killer", "🔪", 2)
     CreateNavButton("ESP", "👁️", 3)
     CreateNavButton("Visual", "🎨", 4)
 
-    -- Buat Frame untuk masing-masing Tab
     local tabSurvivor = CreateTab("Survivor")
     local tabKiller = CreateTab("Killer")
     local tabESP = CreateTab("ESP")
     local tabVisual = CreateTab("Visual")
 
-    -- Isi Tab Survivor
+    -- Isi Konten Survivor
     createToggle(tabSurvivor, "Speed+", "SpeedEnabled", 1)
     createSlider(tabSurvivor, "Speed Value", "SpeedValue", 16, 50, 0.5, 2)
     createToggle(tabSurvivor, "Auto Aim", "AutoAim", 3)
@@ -371,15 +371,15 @@ function UI:CreateSidebar(Config)
     createSlider(tabSurvivor, "Parry Radius", "ParryRadius", 5, 30, 0.5, 6)
     createToggle(tabSurvivor, "Fast Vault", "FastVault", 7)
 
-    -- Isi Tab ESP
+    -- Isi Konten ESP
     createToggle(tabESP, "Wallhack (Survivor)", "WallhackSurvivor", 1)
     createToggle(tabESP, "Wallhack (Killer)", "WallhackKiller", 2)
     createToggle(tabESP, "Hook ESP", "HookESP", 3)
 
-    -- Set Tab Default saat pertama kali UI dimuat
+    -- Set Default Tab yang aktif pertama kali
     SwitchTab("Survivor")
 
-    -- Keybind (Insert) untuk buka/tutup menu di PC
+    -- Keybind (Insert) untuk PC
     UserInputService.InputBegan:Connect(function(input, processed)
         if processed then return end
         if input.KeyCode == Enum.KeyCode.Insert then
