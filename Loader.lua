@@ -7,9 +7,8 @@ for _, v in pairs(folders) do
     if not isfolder(v) then makefolder(v) end
 end
 
--- ⚠️ GANTI "username" DENGAN USERNAME GITHUB ASLI KAMU
--- ⚠️ PASTIKAN FOLDERNYA ADALAH "Roblox-Script" (sesuai struktur)
-local GITHUB_RAW = "https://raw.githubusercontent.com/username/Roblox-Script/main/"
+-- ✅ SUDAH DISESUAIKAN DENGAN USERNAME DAN REPO ASLI
+local GITHUB_RAW = "https://raw.githubusercontent.com/dprmz/Roblox-Scripts/main/"
 
 local GameScripts = {
     [93978595733734] = GITHUB_RAW .. "Main.lua",  -- Violence District Place ID
