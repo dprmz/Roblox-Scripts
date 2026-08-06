@@ -12,273 +12,378 @@ function UI:CreateSidebar(Config)
     screenGui.ResetOnSpawn = false
     screenGui.Parent = player:WaitForChild("PlayerGui")
 
-    -- Sidebar frame
-    local sidebar = Instance.new("Frame")
-    sidebar.Size = UDim2.new(0, 220, 1, 0)
-    sidebar.Position = UDim2.new(0, -220, 0, 0)
-    sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-    sidebar.BackgroundTransparency = 0.15
-    sidebar.BorderSizePixel = 0
-    sidebar.Parent = screenGui
-
-    -- Toggle button (top-left)
+    -- ==========================================
+    -- 1. TOGGLE BUTTON (Untuk buka/tutup menu)
+    -- ==========================================
     local toggleBtn = Instance.new("ImageButton")
-    toggleBtn.Size = UDim2.new(0, 40, 0, 40)
-    toggleBtn.Position = UDim2.new(0, 5, 0, 5)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
-    toggleBtn.BackgroundTransparency = 0.4
-    toggleBtn.BorderSizePixel = 0
+    toggleBtn.Size = UDim2.new(0, 45, 0, 45)
+    toggleBtn.Position = UDim2.new(0, 10, 0, 10)
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     toggleBtn.Image = "rbxassetid://6031090793"
     toggleBtn.Parent = screenGui
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 8)
+    toggleCorner.Parent = toggleBtn
 
-    local sidebarVisible = false
+    local toggleStroke = Instance.new("UIStroke")
+    toggleStroke.Color = Color3.fromRGB(255, 170, 0)
+    toggleStroke.Thickness = 2
+    toggleStroke.Parent = toggleBtn
+
+    -- ==========================================
+    -- 2. MAIN WINDOW (Modern Rounded UI)
+    -- ==========================================
+    local mainWindow = Instance.new("Frame")
+    mainWindow.Size = UDim2.new(0, 450, 0, 320)
+    mainWindow.Position = UDim2.new(0.5, -225, 0.5, -160)
+    mainWindow.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    mainWindow.BorderSizePixel = 0
+    mainWindow.Visible = false -- Default tertutup, buka pakai toggle
+    mainWindow.Parent = screenGui
+
+    local windowCorner = Instance.new("UICorner")
+    windowCorner.CornerRadius = UDim.new(0, 10)
+    windowCorner.Parent = mainWindow
+
+    local windowStroke = Instance.new("UIStroke")
+    windowStroke.Color = Color3.fromRGB(255, 170, 0)
+    windowStroke.Thickness = 1
+    windowStroke.Parent = mainWindow
+
+    -- Logika Toggle Buka/Tutup
     toggleBtn.MouseButton1Click:Connect(function()
-        sidebarVisible = not sidebarVisible
-        local targetX = sidebarVisible and 0 or -220
-        TweenService:Create(sidebar, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-            Position = UDim2.new(0, targetX, 0, 0)
-        }):Play()
+        mainWindow.Visible = not mainWindow.Visible
     end)
 
-    -- Title
+    -- Logika Dragging (Supaya menu bisa digeser)
+    local dragging, dragInput, dragStart, startPos
+    mainWindow.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainWindow.Position
+        end
+    end)
+    mainWindow.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            mainWindow.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    -- ==========================================
+    -- 3. SIDEBAR & NAVIGATION
+    -- ==========================================
+    local sidebar = Instance.new("Frame")
+    sidebar.Size = UDim2.new(0, 130, 1, 0)
+    sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+    sidebar.BorderSizePixel = 0
+    sidebar.Parent = mainWindow
+
+    local sidebarCorner = Instance.new("UICorner")
+    sidebarCorner.CornerRadius = UDim.new(0, 10)
+    sidebarCorner.Parent = sidebar
+
+    -- Fix sudut kanan sidebar agar menyatu dengan konten
+    local sidebarFix = Instance.new("Frame")
+    sidebarFix.Size = UDim2.new(0, 10, 1, 0)
+    sidebarFix.Position = UDim2.new(1, -10, 0, 0)
+    sidebarFix.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+    sidebarFix.BorderSizePixel = 0
+    sidebarFix.Parent = sidebar
+
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.Position = UDim2.new(0, 0, 0, 0)
+    title.Size = UDim2.new(1, 0, 0, 50)
     title.BackgroundTransparency = 1
-    title.Text = "☣ ADI MENU ☣"
+    title.Text = " ☣ ADI"
     title.TextColor3 = Color3.fromRGB(255, 170, 0)
     title.TextSize = 22
-    title.TextScaled = true
-    title.Font = Enum.Font.GothamBold
+    title.Font = Enum.Font.GothamBlack
+    title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = sidebar
 
-    -- Scrolling frame
-    local scroll = Instance.new("ScrollingFrame")
-    scroll.Size = UDim2.new(1, -10, 1, -50)
-    scroll.Position = UDim2.new(0, 5, 0, 45)
-    scroll.BackgroundTransparency = 1
-    scroll.BorderSizePixel = 0
-    scroll.ScrollBarThickness = 4
-    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-    scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    scroll.Parent = sidebar
+    local navLayout = Instance.new("UIListLayout")
+    navLayout.Padding = UDim.new(0, 5)
+    navLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    navLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    navLayout.Parent = sidebar
 
-    local UIList = Instance.new("UIListLayout")
-    UIList.Padding = UDim.new(0, 8)
-    UIList.SortOrder = Enum.SortOrder.LayoutOrder
-    UIList.Parent = scroll
+    local spacer = Instance.new("Frame")
+    spacer.Size = UDim2.new(1, 0, 0, 50)
+    spacer.BackgroundTransparency = 1
+    spacer.LayoutOrder = 0
+    spacer.Parent = sidebar
 
-    -- Helper functions to build controls
-    local function createCategory(name, order)
-        local cat = Instance.new("TextLabel")
-        cat.Size = UDim2.new(1, 0, 0, 30)
-        cat.BackgroundTransparency = 1
-        cat.Text = name
-        cat.TextColor3 = Color3.fromRGB(255, 170, 0)
-        cat.TextSize = 18
-        cat.TextXAlignment = Enum.TextXAlignment.Left
-        cat.Font = Enum.Font.GothamBold
-        cat.LayoutOrder = order
-        cat.Parent = scroll
-        return cat
+    -- ==========================================
+    -- 4. CONTENT AREA & TAB SYSTEM
+    -- ==========================================
+    local contentArea = Instance.new("Frame")
+    contentArea.Size = UDim2.new(1, -130, 1, 0)
+    contentArea.Position = UDim2.new(0, 130, 0, 0)
+    contentArea.BackgroundTransparency = 1
+    contentArea.Parent = mainWindow
+
+    local tabs = {}
+    local navButtons = {}
+
+    local function SwitchTab(tabName)
+        -- Sembunyikan semua tab & reset warna tombol
+        for name, tab in pairs(tabs) do
+            tab.Visible = (name == tabName)
+        end
+        for name, btn in pairs(navButtons) do
+            if name == tabName then
+                -- State: Active
+                btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+                btn.TextColor3 = Color3.fromRGB(255, 170, 0)
+                btn.UIStroke.Color = Color3.fromRGB(255, 170, 0)
+                btn.UIStroke.Transparency = 0
+            else
+                -- State: Inactive
+                btn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+                btn.TextColor3 = Color3.fromRGB(150, 150, 150)
+                btn.UIStroke.Transparency = 1
+            end
+        end
     end
 
-    local function createToggle(labelText, settingKey, order)
+    local function CreateNavButton(name, icon, order)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, 110, 0, 35)
+        btn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+        btn.Text = icon .. "  " .. name
+        btn.TextColor3 = Color3.fromRGB(150, 150, 150)
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 13
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.LayoutOrder = order
+        btn.AutoButtonColor = false
+        btn.Parent = sidebar
+
+        local padding = Instance.new("UIPadding")
+        padding.PaddingLeft = UDim.new(0, 10)
+        padding.Parent = btn
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 6)
+        corner.Parent = btn
+
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(255, 170, 0)
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Transparency = 1 -- Default sembunyi
+        stroke.Parent = btn
+
+        navButtons[name] = btn
+        btn.MouseButton1Click:Connect(function() SwitchTab(name) end)
+    end
+
+    local function CreateTab(name)
+        local scroll = Instance.new("ScrollingFrame")
+        scroll.Size = UDim2.new(1, -20, 1, -20)
+        scroll.Position = UDim2.new(0, 10, 0, 10)
+        scroll.BackgroundTransparency = 1
+        scroll.BorderSizePixel = 0
+        scroll.ScrollBarThickness = 2
+        scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        scroll.Visible = false
+        scroll.Parent = contentArea
+
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 10)
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = scroll
+
+        tabs[name] = scroll
+        return scroll
+    end
+
+    -- ==========================================
+    -- 5. COMPONENT BUILDERS (Untuk isi Tab)
+    -- ==========================================
+    local function createToggle(parent, labelText, settingKey, order)
         local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(1, 0, 0, 30)
-        frame.BackgroundTransparency = 1
+        frame.Size = UDim2.new(1, 0, 0, 35)
+        frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
         frame.LayoutOrder = order
-        frame.Parent = scroll
+        frame.Parent = parent
+
+        Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
 
         local label = Instance.new("TextLabel")
         label.Size = UDim2.new(0.6, 0, 1, 0)
-        label.Position = UDim2.new(0, 0, 0, 0)
+        label.Position = UDim2.new(0, 10, 0, 0)
         label.BackgroundTransparency = 1
         label.Text = labelText
-        label.TextColor3 = Color3.fromRGB(240, 240, 255)
-        label.TextSize = 14
+        label.TextColor3 = Color3.fromRGB(220, 220, 220)
+        label.TextSize = 13
         label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Font = Enum.Font.Gotham
+        label.Font = Enum.Font.GothamSemibold
         label.Parent = frame
 
         local toggle = Instance.new("TextButton")
-        toggle.Size = UDim2.new(0, 50, 0, 24)
-        toggle.Position = UDim2.new(1, -55, 0.5, -12)
+        toggle.Size = UDim2.new(0, 60, 0, 24)
+        toggle.Position = UDim2.new(1, -70, 0.5, -12)
         toggle.BackgroundColor3 = Config[settingKey] and Color3.fromRGB(0, 200, 80) or Color3.fromRGB(200, 50, 50)
         toggle.Text = Config[settingKey] and "ON" or "OFF"
         toggle.TextColor3 = Color3.new(1,1,1)
         toggle.TextSize = 12
         toggle.Font = Enum.Font.GothamBold
-        toggle.BorderSizePixel = 0
         toggle.Parent = frame
+        Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 4)
 
         toggle.MouseButton1Click:Connect(function()
             Config[settingKey] = not Config[settingKey]
             toggle.BackgroundColor3 = Config[settingKey] and Color3.fromRGB(0, 200, 80) or Color3.fromRGB(200, 50, 50)
             toggle.Text = Config[settingKey] and "ON" or "OFF"
         end)
-
-        return toggle
     end
 
-    local function createSlider(labelText, settingKey, minVal, maxVal, step, order)
+    local function createSlider(parent, labelText, settingKey, minVal, maxVal, step, order)
         local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(1, 0, 0, 45)
-        frame.BackgroundTransparency = 1
+        frame.Size = UDim2.new(1, 0, 0, 50)
+        frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
         frame.LayoutOrder = order
-        frame.Parent = scroll
+        frame.Parent = parent
+
+        Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
 
         local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 0, 20)
-        label.Position = UDim2.new(0, 0, 0, 0)
+        label.Size = UDim2.new(1, -20, 0, 20)
+        label.Position = UDim2.new(0, 10, 0, 5)
         label.BackgroundTransparency = 1
-        label.Text = labelText .. " (" .. tostring(Config[settingKey]) .. ")"
-        label.TextColor3 = Color3.fromRGB(240, 240, 255)
-        label.TextSize = 13
+        label.Text = labelText .. " : " .. tostring(Config[settingKey])
+        label.TextColor3 = Color3.fromRGB(220, 220, 220)
+        label.TextSize = 12
         label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Font = Enum.Font.Gotham
+        label.Font = Enum.Font.GothamSemibold
         label.Parent = frame
 
         local sliderBtn = Instance.new("TextButton")
-        sliderBtn.Size = UDim2.new(1, -10, 0, 16)
-        sliderBtn.Position = UDim2.new(0, 5, 0, 22)
-        sliderBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-        sliderBtn.BorderSizePixel = 0
+        sliderBtn.Size = UDim2.new(1, -20, 0, 12)
+        sliderBtn.Position = UDim2.new(0, 10, 0, 28)
+        sliderBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
         sliderBtn.Text = ""
         sliderBtn.AutoButtonColor = false
         sliderBtn.Parent = frame
+        Instance.new("UICorner", sliderBtn).CornerRadius = UDim.new(1, 0)
 
         local startPercent = math.clamp((Config[settingKey] - minVal) / (maxVal - minVal), 0, 1)
-
         local sliderFill = Instance.new("Frame")
         sliderFill.Size = UDim2.new(startPercent, 0, 1, 0)
         sliderFill.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
-        sliderFill.BorderSizePixel = 0
         sliderFill.Parent = sliderBtn
+        Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
 
         local dragging = false
-
         sliderBtn.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-            end
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true end
         end)
-
         UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = false
-            end
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
         end)
-
         UserInputService.InputChanged:Connect(function(input)
             if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                 local mousePos = UserInputService:GetMouseLocation().X
-                local sliderPos = sliderBtn.AbsolutePosition.X
-                local sliderSize = sliderBtn.AbsoluteSize.X
-                
-                local percent = math.clamp((mousePos - sliderPos) / sliderSize, 0, 1)
-                local newValue = minVal + (maxVal - minVal) * percent
-                newValue = math.floor(newValue / step + 0.5) * step
+                local percent = math.clamp((mousePos - sliderBtn.AbsolutePosition.X) / sliderBtn.AbsoluteSize.X, 0, 1)
+                local newValue = math.floor((minVal + (maxVal - minVal) * percent) / step + 0.5) * step
 
                 Config[settingKey] = newValue
                 sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-                
-                local formatString = step % 1 == 0 and "%.0f" or "%.1f"
-                label.Text = labelText .. " (" .. string.format(formatString, newValue) .. ")"
+                local fmt = step % 1 == 0 and "%.0f" or "%.1f"
+                label.Text = labelText .. " : " .. string.format(fmt, newValue)
             end
         end)
-
-        return sliderBtn
     end
 
-    -- Build the sidebar layout
-    local order = 0
+    local function createDropdown(parent, labelText, settingKey, options, order)
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(1, 0, 0, 35)
+        frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+        frame.LayoutOrder = order
+        frame.Parent = parent
+        Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
 
-    -- Survivor
-    createCategory("🛡 SURVIVOR", order); order = order + 1
-    createToggle("Speed+", "SpeedEnabled", order); order = order + 1
-    createSlider("Speed Value", "SpeedValue", 16, 50, 0.5, order); order = order + 1
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(0.5, 0, 1, 0)
+        label.Position = UDim2.new(0, 10, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = labelText
+        label.TextColor3 = Color3.fromRGB(220, 220, 220)
+        label.TextSize = 13
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Font = Enum.Font.GothamSemibold
+        label.Parent = frame
 
-    -- Auto‑aim
-    local aimFrame = Instance.new("Frame")
-    aimFrame.Size = UDim2.new(1, 0, 0, 30)
-    aimFrame.BackgroundTransparency = 1
-    aimFrame.LayoutOrder = order
-    aimFrame.Parent = scroll
-    order = order + 1
+        local dropdown = Instance.new("TextBox")
+        dropdown.Size = UDim2.new(0, 80, 0, 24)
+        dropdown.Position = UDim2.new(1, -90, 0.5, -12)
+        dropdown.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        dropdown.Text = Config[settingKey]
+        dropdown.TextColor3 = Color3.fromRGB(255, 170, 0)
+        dropdown.TextSize = 12
+        dropdown.Font = Enum.Font.GothamBold
+        dropdown.Parent = frame
+        Instance.new("UICorner", dropdown).CornerRadius = UDim.new(0, 4)
 
-    local aimLabel = Instance.new("TextLabel")
-    aimLabel.Size = UDim2.new(0.6, 0, 1, 0)
-    aimLabel.Position = UDim2.new(0, 0, 0, 0)
-    aimLabel.BackgroundTransparency = 1
-    aimLabel.Text = "Auto-Aim"
-    aimLabel.TextColor3 = Color3.fromRGB(240, 240, 255)
-    aimLabel.TextSize = 14
-    aimLabel.TextXAlignment = Enum.TextXAlignment.Left
-    aimLabel.Font = Enum.Font.Gotham
-    aimLabel.Parent = aimFrame
+        dropdown.FocusLost:Connect(function()
+            local val = dropdown.Text
+            local isValid = false
+            for _, opt in ipairs(options) do
+                if val:lower() == opt:lower() then val = opt isValid = true break end
+            end
+            if isValid then Config[settingKey] = val else dropdown.Text = Config[settingKey] end
+        end)
+    end
 
-    local aimToggle = Instance.new("TextButton")
-    aimToggle.Size = UDim2.new(0, 50, 0, 24)
-    aimToggle.Position = UDim2.new(1, -55, 0.5, -12)
-    aimToggle.BackgroundColor3 = Config.AutoAim and Color3.fromRGB(0, 200, 80) or Color3.fromRGB(200, 50, 50)
-    aimToggle.Text = Config.AutoAim and "ON" or "OFF"
-    aimToggle.TextColor3 = Color3.new(1,1,1)
-    aimToggle.TextSize = 12
-    aimToggle.Font = Enum.Font.GothamBold
-    aimToggle.BorderSizePixel = 0
-    aimToggle.Parent = aimFrame
-    aimToggle.MouseButton1Click:Connect(function()
-        Config.AutoAim = not Config.AutoAim
-        aimToggle.BackgroundColor3 = Config.AutoAim and Color3.fromRGB(0, 200, 80) or Color3.fromRGB(200, 50, 50)
-        aimToggle.Text = Config.AutoAim and "ON" or "OFF"
-    end)
+    -- ==========================================
+    -- 6. INITIALIZE TABS & FEATURES
+    -- ==========================================
+    -- Buat Navigasi (Icon + Nama)
+    CreateNavButton("Survivor", "🛡️", 1)
+    CreateNavButton("Killer", "🔪", 2)
+    CreateNavButton("ESP", "👁️", 3)
+    CreateNavButton("Visual", "🎨", 4)
 
-    local aimDropdown = Instance.new("TextBox")
-    aimDropdown.Size = UDim2.new(0, 70, 0, 22)
-    aimDropdown.Position = UDim2.new(1, -130, 0.5, -11)
-    aimDropdown.BackgroundColor3 = Color3.fromRGB(50,50,60)
-    aimDropdown.Text = Config.AimPart
-    aimDropdown.TextColor3 = Color3.fromRGB(240, 240, 255)
-    aimDropdown.TextSize = 12
-    aimDropdown.Font = Enum.Font.Gotham
-    aimDropdown.BorderSizePixel = 0
-    aimDropdown.PlaceholderText = "Head/Torso"
-    aimDropdown.Parent = aimFrame
-    aimDropdown.FocusLost:Connect(function()
-        local val = aimDropdown.Text
-        if val == "Head" or val == "Torso" then
-            Config.AimPart = val
-        else
-            aimDropdown.Text = Config.AimPart
-        end
-    end)
+    -- Buat Frame untuk masing-masing Tab
+    local tabSurvivor = CreateTab("Survivor")
+    local tabKiller = CreateTab("Killer")
+    local tabESP = CreateTab("ESP")
+    local tabVisual = CreateTab("Visual")
 
-    createToggle("Auto Parry", "AutoParry", order); order = order + 1
-    createSlider("Parry Radius", "ParryRadius", 5, 30, 0.5, order); order = order + 1
-    createToggle("Fast Vault", "FastVault", order); order = order + 1
+    -- Isi Tab Survivor
+    createToggle(tabSurvivor, "Speed+", "SpeedEnabled", 1)
+    createSlider(tabSurvivor, "Speed Value", "SpeedValue", 16, 50, 0.5, 2)
+    createToggle(tabSurvivor, "Auto Aim", "AutoAim", 3)
+    createDropdown(tabSurvivor, "Aim Part", "AimPart", {"Head", "Torso"}, 4)
+    createToggle(tabSurvivor, "Auto Parry", "AutoParry", 5)
+    createSlider(tabSurvivor, "Parry Radius", "ParryRadius", 5, 30, 0.5, 6)
+    createToggle(tabSurvivor, "Fast Vault", "FastVault", 7)
 
-    -- ESP
-    createCategory("👁 ESP", order); order = order + 1
-    createToggle("Wallhack (Survivor)", "WallhackSurvivor", order); order = order + 1
-    createToggle("Wallhack (Killer)", "WallhackKiller", order); order = order + 1
-    createToggle("Hook ESP", "HookESP", order); order = order + 1
+    -- Isi Tab ESP
+    createToggle(tabESP, "Wallhack (Survivor)", "WallhackSurvivor", 1)
+    createToggle(tabESP, "Wallhack (Killer)", "WallhackKiller", 2)
+    createToggle(tabESP, "Hook ESP", "HookESP", 3)
 
-    -- Visual
-    createCategory("🎨 VISUAL", order); order = order + 1
+    -- Set Tab Default saat pertama kali UI dimuat
+    SwitchTab("Survivor")
 
-    -- Spacer
-    local spacer = Instance.new("Frame")
-    spacer.Size = UDim2.new(1, 0, 0, 10)
-    spacer.BackgroundTransparency = 1
-    spacer.LayoutOrder = order
-    spacer.Parent = scroll
-
-    -- Keybind
+    -- Keybind (Insert) untuk buka/tutup menu di PC
     UserInputService.InputBegan:Connect(function(input, processed)
         if processed then return end
         if input.KeyCode == Enum.KeyCode.Insert then
-            toggleBtn:Click()
+            mainWindow.Visible = not mainWindow.Visible
         end
     end)
 
