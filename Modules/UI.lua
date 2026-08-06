@@ -1,4 +1,4 @@
--- UI.lua (Compact & Next-Gen Modern Redesign)
+-- UI.lua (Ultra-Modern Glassmorphism Redesign)
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -8,24 +8,24 @@ local UI = {}
 function UI:CreateSidebar(Config)
     local player = Players.LocalPlayer
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "H4xUI_Compact"
+    screenGui.Name = "H4xUI_Glassmorphism"
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.Parent = player:WaitForChild("PlayerGui")
 
     -- ==========================================
-    -- COLOR PALETTE & DESIGN SYSTEM
+    -- COLOR PALETTE & GLASS DESIGN SYSTEM
     -- ==========================================
     local Theme = {
-        Accent = Color3.fromRGB(245, 45, 75),          -- Crimson Neon
-        AccentGlow = Color3.fromRGB(255, 60, 90),
-        Background = Color3.fromRGB(12, 13, 17),       -- Dark Glass
-        Sidebar = Color3.fromRGB(16, 17, 23),          -- Deep Charcoal
-        CardBg = Color3.fromRGB(21, 23, 31),           -- Elevated Surface
-        CardBorder = Color3.fromRGB(35, 38, 52),       -- Subtle Border
-        TextPrimary = Color3.fromRGB(250, 250, 252),
-        TextMuted = Color3.fromRGB(130, 135, 155),
-        TextDisabled = Color3.fromRGB(80, 85, 105),
+        Accent = Color3.fromRGB(255, 45, 85),           -- Neon Crimson
+        AccentGlow = Color3.fromRGB(255, 80, 110),
+        Background = Color3.fromRGB(10, 11, 16),        -- Translucent Dark
+        Sidebar = Color3.fromRGB(14, 15, 22),           -- Translucent Charcoal
+        CardBg = Color3.fromRGB(20, 22, 32),            -- Card Surface
+        CardBorder = Color3.fromRGB(255, 255, 255),     -- Glass Edge (High transparency)
+        TextPrimary = Color3.fromRGB(255, 255, 255),
+        TextMuted = Color3.fromRGB(150, 155, 175),
+        TextDisabled = Color3.fromRGB(90, 95, 115),
     }
 
     local function getConfig(key, default)
@@ -36,17 +36,18 @@ function UI:CreateSidebar(Config)
     end
 
     local function animate(obj, props, time)
-        return TweenService:Create(obj, TweenInfo.new(time or 0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), props)
+        return TweenService:Create(obj, TweenInfo.new(time or 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), props)
     end
 
     -- ==========================================
-    -- 1. FLOATING TOGGLE BUTTON (MOBILE FRIENDLY)
+    -- 1. FLOATING TOGGLE BUTTON (GLASS STYLE)
     -- ==========================================
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Name = "ToggleUI"
     toggleBtn.Size = UDim2.new(0, 42, 0, 42)
     toggleBtn.Position = UDim2.new(0, 15, 0, 15)
     toggleBtn.BackgroundColor3 = Theme.Sidebar
+    toggleBtn.BackgroundTransparency = 0.2
     toggleBtn.Text = "H"
     toggleBtn.TextColor3 = Theme.Accent
     toggleBtn.TextSize = 18
@@ -63,33 +64,44 @@ function UI:CreateSidebar(Config)
     toggleStroke.Parent = toggleBtn
 
     -- ==========================================
-    -- 2. MAIN WINDOW (UKURAN KOMPAK: 560 x 340)
+    -- 2. MAIN WINDOW (TRANSPARENT GLASS 560x340)
     -- ==========================================
     local mainWindow = Instance.new("Frame")
     mainWindow.Name = "MainWindow"
     mainWindow.Size = UDim2.new(0, 560, 0, 340)
     mainWindow.Position = UDim2.new(0.5, -280, 0.5, -170)
     mainWindow.BackgroundColor3 = Theme.Background
+    mainWindow.BackgroundTransparency = 0.25            -- EFEK TRANSPARAN BACKGROUND
     mainWindow.BorderSizePixel = 0
     mainWindow.ClipsDescendants = true
     mainWindow.Parent = screenGui
 
-    Instance.new("UICorner", mainWindow).CornerRadius = UDim.new(0, 14)
+    Instance.new("UICorner", mainWindow).CornerRadius = UDim.new(0, 16)
 
+    -- Glass Outer Glow Stroke
     local mainStroke = Instance.new("UIStroke")
     mainStroke.Color = Theme.CardBorder
     mainStroke.Thickness = 1
+    mainStroke.Transparency = 0.88
     mainStroke.Parent = mainWindow
 
-    -- Top Accent Line
+    -- Top Accent Gradient Line
     local topBarLine = Instance.new("Frame")
     topBarLine.Size = UDim2.new(1, 0, 0, 2)
-    topBarLine.BackgroundColor3 = Theme.Accent
+    topBarLine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     topBarLine.BorderSizePixel = 0
     topBarLine.Parent = mainWindow
 
+    local topGradient = Instance.new("UIGradient")
+    topGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Theme.Accent),
+        ColorSequenceKeypoint.new(0.5, Theme.AccentGlow),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 20, 30))
+    })
+    topGradient.Parent = topBarLine
+
     -- ==========================================
-    -- 3. DRAGGING SYSTEM (SMOOTH & RESPONSIVE)
+    -- 3. DRAGGING SYSTEM
     -- ==========================================
     local dragging, dragInput, dragStart, startPos
 
@@ -127,11 +139,12 @@ function UI:CreateSidebar(Config)
     end)
 
     -- ==========================================
-    -- 4. SIDEBAR NAVIGATION
+    -- 4. SIDEBAR NAVIGATION (TRANSLUCENT)
     -- ==========================================
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 160, 1, 0)
     sidebar.BackgroundColor3 = Theme.Sidebar
+    sidebar.BackgroundTransparency = 0.35             -- EFEK TRANSPARAN SIDEBAR
     sidebar.BorderSizePixel = 0
     sidebar.Parent = mainWindow
 
@@ -143,14 +156,14 @@ function UI:CreateSidebar(Config)
 
     local logoDot = Instance.new("Frame")
     logoDot.Size = UDim2.new(0, 8, 0, 8)
-    logoDot.Position = UDim2.new(0, 14, 0.5, -4)
+    logoDot.Position = UDim2.new(0, 16, 0.5, -4)
     logoDot.BackgroundColor3 = Theme.Accent
     logoDot.Parent = brandFrame
     Instance.new("UICorner", logoDot).CornerRadius = UDim.new(1, 0)
 
     local brandTitle = Instance.new("TextLabel")
-    brandTitle.Size = UDim2.new(1, -30, 1, 0)
-    brandTitle.Position = UDim2.new(0, 28, 0, 0)
+    brandTitle.Size = UDim2.new(1, -32, 1, 0)
+    brandTitle.Position = UDim2.new(0, 30, 0, 0)
     brandTitle.BackgroundTransparency = 1
     brandTitle.Text = "H4xScripts"
     brandTitle.TextColor3 = Theme.TextPrimary
@@ -179,6 +192,7 @@ function UI:CreateSidebar(Config)
     userProfile.Size = UDim2.new(1, -16, 0, 38)
     userProfile.Position = UDim2.new(0, 8, 1, -44)
     userProfile.BackgroundColor3 = Theme.CardBg
+    userProfile.BackgroundTransparency = 0.4
     userProfile.Parent = sidebar
     Instance.new("UICorner", userProfile).CornerRadius = UDim.new(0, 8)
 
@@ -241,6 +255,7 @@ function UI:CreateSidebar(Config)
         b.Size = UDim2.new(0, 0, 0, 22)
         b.AutomaticSize = Enum.AutomaticSize.X
         b.BackgroundColor3 = isAccent and Theme.Accent or Theme.CardBg
+        b.BackgroundTransparency = isAccent and 0.1 or 0.4
         b.Text = "  " .. text .. "  "
         b.TextColor3 = Theme.TextPrimary
         b.TextSize = 9
@@ -252,6 +267,7 @@ function UI:CreateSidebar(Config)
             local stroke = Instance.new("UIStroke")
             stroke.Color = Theme.CardBorder
             stroke.Thickness = 1
+            stroke.Transparency = 0.9
             stroke.Parent = b
         end
     end
@@ -264,6 +280,7 @@ function UI:CreateSidebar(Config)
     closeBtn.Size = UDim2.new(0, 24, 0, 24)
     closeBtn.Position = UDim2.new(1, -30, 0.5, -12)
     closeBtn.BackgroundColor3 = Theme.CardBg
+    closeBtn.BackgroundTransparency = 0.4
     closeBtn.Text = "✕"
     closeBtn.TextColor3 = Theme.TextMuted
     closeBtn.TextSize = 10
@@ -277,7 +294,7 @@ function UI:CreateSidebar(Config)
     end)
 
     -- ==========================================
-    -- 6. CONTENT TABS
+    -- 6. CONTENT TABS & NAVIGATION
     -- ==========================================
     local contentArea = Instance.new("Frame")
     contentArea.Size = UDim2.new(1, -160, 1, -48)
@@ -296,10 +313,10 @@ function UI:CreateSidebar(Config)
         for name, btn in pairs(navButtons) do
             local line = btn:FindFirstChild("ActiveLine")
             if name == tabName then
-                animate(btn, {BackgroundColor3 = Theme.CardBg, TextColor3 = Theme.TextPrimary}):Play()
+                animate(btn, {BackgroundTransparency = 0.3, TextColor3 = Theme.TextPrimary}):Play()
                 if line then animate(line, {BackgroundTransparency = 0}):Play() end
             else
-                animate(btn, {BackgroundColor3 = Theme.Sidebar, TextColor3 = Theme.TextMuted}):Play()
+                animate(btn, {BackgroundTransparency = 1, TextColor3 = Theme.TextMuted}):Play()
                 if line then animate(line, {BackgroundTransparency = 1}):Play() end
             end
         end
@@ -308,7 +325,8 @@ function UI:CreateSidebar(Config)
     local function CreateNavButton(name, icon, order)
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, -16, 0, 32)
-        btn.BackgroundColor3 = Theme.Sidebar
+        btn.BackgroundColor3 = Theme.CardBg
+        btn.BackgroundTransparency = 1
         btn.Text = "    " .. icon .. "  " .. name
         btn.TextColor3 = Theme.TextMuted
         btn.Font = Enum.Font.GothamMedium
@@ -340,7 +358,8 @@ function UI:CreateSidebar(Config)
         scroll.BackgroundTransparency = 1
         scroll.BorderSizePixel = 0
         scroll.ScrollBarThickness = 2
-        scroll.ScrollBarImageColor3 = Theme.CardBorder
+        scroll.ScrollBarImageColor3 = Theme.Accent
+        scroll.ScrollBarImageTransparency = 0.5
         scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
         scroll.Visible = false
         scroll.Parent = contentArea
@@ -361,7 +380,7 @@ function UI:CreateSidebar(Config)
     end
 
     -- ==========================================
-    -- 7. COMPONENTS (CARDS, TOGGLES, SLIDERS)
+    -- 7. GLASS COMPONENTS (CARDS, TOGGLES, SLIDERS)
     -- ==========================================
     local function createSectionHeader(parent, text, order)
         local lbl = Instance.new("TextLabel")
@@ -380,14 +399,16 @@ function UI:CreateSidebar(Config)
         local card = Instance.new("Frame")
         card.Size = UDim2.new(1, 0, 0, height)
         card.BackgroundColor3 = Theme.CardBg
+        card.BackgroundTransparency = 0.4            -- Card Glass Effect
         card.LayoutOrder = order
         card.Parent = parent
 
-        Instance.new("UICorner", card).CornerRadius = UDim.new(0, 8)
+        Instance.new("UICorner", card).CornerRadius = UDim.new(0, 10)
 
         local stroke = Instance.new("UIStroke")
         stroke.Color = Theme.CardBorder
         stroke.Thickness = 1
+        stroke.Transparency = 0.92
         stroke.Parent = card
 
         local layout = Instance.new("UIListLayout")
@@ -429,6 +450,7 @@ function UI:CreateSidebar(Config)
         toggle.Size = UDim2.new(0, 36, 0, 18)
         toggle.Position = UDim2.new(1, -36, 0.5, -9)
         toggle.BackgroundColor3 = initialVal and Theme.Accent or Theme.Background
+        toggle.BackgroundTransparency = initialVal and 0.1 or 0.5
         toggle.Text = ""
         toggle.AutoButtonColor = false
         toggle.Parent = frame
@@ -447,7 +469,10 @@ function UI:CreateSidebar(Config)
             end
             local isActive = getConfig(settingKey, false)
 
-            animate(toggle, {BackgroundColor3 = isActive and Theme.Accent or Theme.Background}):Play()
+            animate(toggle, {
+                BackgroundColor3 = isActive and Theme.Accent or Theme.Background,
+                BackgroundTransparency = isActive and 0.1 or 0.5
+            }):Play()
             animate(knob, {Position = isActive and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
         end)
     end
@@ -486,6 +511,7 @@ function UI:CreateSidebar(Config)
         sliderTrack.Size = UDim2.new(1, 0, 0, 4)
         sliderTrack.Position = UDim2.new(0, 0, 0, 22)
         sliderTrack.BackgroundColor3 = Theme.Background
+        sliderTrack.BackgroundTransparency = 0.5
         sliderTrack.Text = ""
         sliderTrack.AutoButtonColor = false
         sliderTrack.Parent = frame
@@ -526,7 +552,7 @@ function UI:CreateSidebar(Config)
     end
 
     -- ==========================================
-    -- 8. TABS INITIALIZATION
+    -- 8. INITIALIZE TABS & CONTROLS
     -- ==========================================
     CreateNavButton("About", "ℹ️", 1)
     CreateNavButton("Generators", "⚡", 2)
@@ -611,6 +637,7 @@ function UI:CreateSidebar(Config)
     emoteBox.Size = UDim2.new(0, 90, 0, 22)
     emoteBox.Position = UDim2.new(1, -145, 0.5, -11)
     emoteBox.BackgroundColor3 = Theme.Background
+    emoteBox.BackgroundTransparency = 0.4
     emoteBox.Text = "4EverLvu"
     emoteBox.TextColor3 = Theme.TextPrimary
     emoteBox.TextSize = 10
@@ -622,6 +649,7 @@ function UI:CreateSidebar(Config)
     playBtn.Size = UDim2.new(0, 50, 0, 22)
     playBtn.Position = UDim2.new(1, -50, 0.5, -11)
     playBtn.BackgroundColor3 = Theme.Accent
+    playBtn.BackgroundTransparency = 0.1
     playBtn.Text = "Play"
     playBtn.TextColor3 = Theme.TextPrimary
     playBtn.TextSize = 10
