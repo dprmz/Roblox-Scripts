@@ -33,10 +33,10 @@ function UI:CreateSidebar(Config)
     end
 
     -- ==========================================
-    -- 1. FLOATING TOGGLE BUTTON (Icon Menu Minimalis)
+    -- 1. FLOATING TOGGLE BUTTON (Draggable / Bebas Digeser)
     -- ==========================================
     local toggleBtn = Instance.new("ImageButton")
-    toggleBtn.Size = UDim2.new(0, 42, 0, 42)
+    toggleBtn.Size = UDim2.new(0, 40, 0, 40)
     toggleBtn.Position = UDim2.new(0, 20, 0, 20)
     toggleBtn.BackgroundColor3 = bgMainColor
     toggleBtn.BackgroundTransparency = 0.2
@@ -50,12 +50,43 @@ function UI:CreateSidebar(Config)
     toggleStroke.Thickness = 1.5
     toggleStroke.Transparency = 0.3
 
+    -- System Dragging untuk Floating Button
+    local toggleDragging, toggleDragStart, toggleStartPos
+    local hasDragged = false
+
+    toggleBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            toggleDragging = true
+            hasDragged = false
+            toggleDragStart = input.Position
+            toggleStartPos = toggleBtn.Position
+        end
+    end)
+
+    toggleBtn.InputChanged:Connect(function(input)
+        if toggleDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - toggleDragStart
+            if delta.Magnitude > 2 then
+                hasDragged = true
+            end
+            TweenService:Create(toggleBtn, TweenInfo.new(0.05, Enum.EasingStyle.Sine), {
+                Position = UDim2.new(toggleStartPos.X.Scale, toggleStartPos.X.Offset + delta.X, toggleStartPos.Y.Scale, toggleStartPos.Y.Offset + delta.Y)
+            }):Play()
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            toggleDragging = false
+        end
+    end)
+
     -- ==========================================
-    -- 2. MAIN WINDOW (Ukuran Sedang & Modern)
+    -- 2. MAIN WINDOW (Ukuran Lebih Kecil/Compact)
     -- ==========================================
     local mainWindow = Instance.new("Frame")
-    mainWindow.Size = UDim2.new(0, 600, 0, 380)
-    mainWindow.Position = UDim2.new(0.5, -300, 0.5, -190)
+    mainWindow.Size = UDim2.new(0, 520, 0, 320)
+    mainWindow.Position = UDim2.new(0.5, -260, 0.5, -160)
     mainWindow.BackgroundColor3 = bgMainColor
     mainWindow.BackgroundTransparency = mainTransparency
     mainWindow.BorderSizePixel = 0
@@ -63,15 +94,22 @@ function UI:CreateSidebar(Config)
     mainWindow.Visible = true
     mainWindow.Parent = screenGui
 
-    Instance.new("UICorner", mainWindow).CornerRadius = UDim.new(0, 14)
+    Instance.new("UICorner", mainWindow).CornerRadius = UDim.new(0, 12)
     
     local mainStroke = Instance.new("UIStroke", mainWindow)
     mainStroke.Color = Color3.fromRGB(255, 255, 255)
     mainStroke.Thickness = 1
     mainStroke.Transparency = 0.85
 
+    -- Toggle Frame via Float Button (Hanya jika tidak sedang digeser)
+    toggleBtn.MouseButton1Click:Connect(function()
+        if not hasDragged then
+            mainWindow.Visible = not mainWindow.Visible
+        end
+    end)
+
     -- ==========================================
-    -- 3. DRAGGING SYSTEM (Smooth Motion)
+    -- 3. DRAGGING SYSTEM MAIN WINDOW
     -- ==========================================
     local dragging, dragInput, dragStart, startPos
     mainWindow.InputBegan:Connect(function(input)
@@ -100,16 +138,11 @@ function UI:CreateSidebar(Config)
         end
     end)
 
-    -- Toggle Frame via Float Button
-    toggleBtn.MouseButton1Click:Connect(function()
-        mainWindow.Visible = not mainWindow.Visible
-    end)
-
     -- ==========================================
     -- 4. SIDEBAR NAVIGATION
     -- ==========================================
     local sidebar = Instance.new("Frame")
-    sidebar.Size = UDim2.new(0, 170, 1, 0)
+    sidebar.Size = UDim2.new(0, 150, 1, 0)
     sidebar.Position = UDim2.new(0, 0, 0, 0)
     sidebar.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
     sidebar.BackgroundTransparency = 0.3
@@ -126,83 +159,83 @@ function UI:CreateSidebar(Config)
 
     -- Logo & Brand Header
     local brandFrame = Instance.new("Frame")
-    brandFrame.Size = UDim2.new(1, 0, 0, 52)
+    brandFrame.Size = UDim2.new(1, 0, 0, 46)
     brandFrame.BackgroundTransparency = 1
     brandFrame.Parent = sidebar
 
     local brandTitle = Instance.new("TextLabel")
-    brandTitle.Size = UDim2.new(1, -20, 0, 20)
-    brandTitle.Position = UDim2.new(0, 14, 0, 12)
+    brandTitle.Size = UDim2.new(1, -16, 0, 18)
+    brandTitle.Position = UDim2.new(0, 12, 0, 10)
     brandTitle.BackgroundTransparency = 1
     brandTitle.Text = "H4X <font color=\"rgb(255,55,65)\">HUB</font>"
     brandTitle.RichText = true
     brandTitle.TextColor3 = textPrimary
-    brandTitle.TextSize = 16
+    brandTitle.TextSize = 15
     brandTitle.Font = Enum.Font.GothamBold
     brandTitle.TextXAlignment = Enum.TextXAlignment.Left
     brandTitle.Parent = brandFrame
 
     local brandSub = Instance.new("TextLabel")
-    brandSub.Size = UDim2.new(1, -20, 0, 12)
-    brandSub.Position = UDim2.new(0, 14, 0, 30)
+    brandSub.Size = UDim2.new(1, -16, 0, 10)
+    brandSub.Position = UDim2.new(0, 12, 0, 26)
     brandSub.BackgroundTransparency = 1
     brandSub.Text = "Violence District • Remake"
     brandSub.TextColor3 = textSecondary
-    brandSub.TextSize = 9
+    brandSub.TextSize = 8
     brandSub.Font = Enum.Font.Gotham
     brandSub.TextXAlignment = Enum.TextXAlignment.Left
     brandSub.Parent = brandFrame
 
     -- Navigation Container
     local navContainer = Instance.new("ScrollingFrame")
-    navContainer.Size = UDim2.new(1, 0, 1, -110)
-    navContainer.Position = UDim2.new(0, 0, 0, 55)
+    navContainer.Size = UDim2.new(1, 0, 1, -92)
+    navContainer.Position = UDim2.new(0, 0, 0, 48)
     navContainer.BackgroundTransparency = 1
     navContainer.BorderSizePixel = 0
     navContainer.ScrollBarThickness = 0
     navContainer.Parent = sidebar
 
     local navLayout = Instance.new("UIListLayout")
-    navLayout.Padding = UDim.new(0, 4)
+    navLayout.Padding = UDim.new(0, 3)
     navLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     navLayout.SortOrder = Enum.SortOrder.LayoutOrder
     navLayout.Parent = navContainer
 
     -- User Info Card Bottom
     local userProfile = Instance.new("Frame")
-    userProfile.Size = UDim2.new(1, -20, 0, 42)
-    userProfile.Position = UDim2.new(0, 10, 1, -50)
+    userProfile.Size = UDim2.new(1, -16, 0, 36)
+    userProfile.Position = UDim2.new(0, 8, 1, -42)
     userProfile.BackgroundColor3 = bgCardColor
     userProfile.BackgroundTransparency = 0.5
     userProfile.Parent = sidebar
-    Instance.new("UICorner", userProfile).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", userProfile).CornerRadius = UDim.new(0, 6)
 
     local profileAvatar = Instance.new("ImageLabel")
-    profileAvatar.Size = UDim2.new(0, 28, 0, 28)
-    profileAvatar.Position = UDim2.new(0, 7, 0.5, -14)
+    profileAvatar.Size = UDim2.new(0, 24, 0, 24)
+    profileAvatar.Position = UDim2.new(0, 6, 0.5, -12)
     profileAvatar.BackgroundTransparency = 1
     profileAvatar.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
     profileAvatar.Parent = userProfile
     Instance.new("UICorner", profileAvatar).CornerRadius = UDim.new(1, 0)
 
     local userLbl = Instance.new("TextLabel")
-    userLbl.Size = UDim2.new(1, -44, 0, 14)
-    userLbl.Position = UDim2.new(0, 40, 0, 6)
+    userLbl.Size = UDim2.new(1, -36, 0, 12)
+    userLbl.Position = UDim2.new(0, 34, 0, 5)
     userLbl.BackgroundTransparency = 1
     userLbl.Text = player.DisplayName
     userLbl.TextColor3 = textPrimary
-    userLbl.TextSize = 11
+    userLbl.TextSize = 10
     userLbl.Font = Enum.Font.GothamBold
     userLbl.TextXAlignment = Enum.TextXAlignment.Left
     userLbl.Parent = userProfile
 
     local userSubLbl = Instance.new("TextLabel")
-    userSubLbl.Size = UDim2.new(1, -44, 0, 12)
-    userSubLbl.Position = UDim2.new(0, 40, 0, 20)
+    userSubLbl.Size = UDim2.new(1, -36, 0, 10)
+    userSubLbl.Position = UDim2.new(0, 34, 0, 17)
     userSubLbl.BackgroundTransparency = 1
     userSubLbl.Text = "@" .. player.Name
     userSubLbl.TextColor3 = textSecondary
-    userSubLbl.TextSize = 9
+    userSubLbl.TextSize = 8
     userSubLbl.Font = Enum.Font.Gotham
     userSubLbl.TextXAlignment = Enum.TextXAlignment.Left
     userSubLbl.Parent = userProfile
@@ -211,41 +244,41 @@ function UI:CreateSidebar(Config)
     -- 5. TOP BAR & CONTENT AREA
     -- ==========================================
     local topBar = Instance.new("Frame")
-    topBar.Size = UDim2.new(1, -170, 0, 44)
-    topBar.Position = UDim2.new(0, 170, 0, 0)
+    topBar.Size = UDim2.new(1, -150, 0, 38)
+    topBar.Position = UDim2.new(0, 150, 0, 0)
     topBar.BackgroundTransparency = 1
     topBar.Parent = mainWindow
 
     local currentTabTitle = Instance.new("TextLabel")
-    currentTabTitle.Size = UDim2.new(0, 200, 1, 0)
-    currentTabTitle.Position = UDim2.new(0, 16, 0, 0)
+    currentTabTitle.Size = UDim2.new(0, 180, 1, 0)
+    currentTabTitle.Position = UDim2.new(0, 14, 0, 0)
     currentTabTitle.BackgroundTransparency = 1
     currentTabTitle.Text = "Survivor"
     currentTabTitle.TextColor3 = textPrimary
-    currentTabTitle.TextSize = 15
+    currentTabTitle.TextSize = 14
     currentTabTitle.Font = Enum.Font.GothamBold
     currentTabTitle.TextXAlignment = Enum.TextXAlignment.Left
     currentTabTitle.Parent = topBar
 
     local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 26, 0, 26)
-    closeBtn.Position = UDim2.new(1, -34, 0.5, -13)
+    closeBtn.Size = UDim2.new(0, 22, 0, 22)
+    closeBtn.Position = UDim2.new(1, -28, 0.5, -11)
     closeBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     closeBtn.BackgroundTransparency = 0.9
     closeBtn.Text = "✕"
     closeBtn.TextColor3 = textPrimary
-    closeBtn.TextSize = 11
+    closeBtn.TextSize = 10
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.Parent = topBar
-    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 5)
 
     closeBtn.MouseButton1Click:Connect(function()
         mainWindow.Visible = false
     end)
 
     local contentArea = Instance.new("Frame")
-    contentArea.Size = UDim2.new(1, -170, 1, -44)
-    contentArea.Position = UDim2.new(0, 170, 0, 44)
+    contentArea.Size = UDim2.new(1, -150, 1, -38)
+    contentArea.Position = UDim2.new(0, 150, 0, 38)
     contentArea.BackgroundTransparency = 1
     contentArea.Parent = mainWindow
 
@@ -265,7 +298,7 @@ function UI:CreateSidebar(Config)
                 btn.TextColor3 = textPrimary
                 btn.Font = Enum.Font.GothamBold
                 if indicator then
-                    TweenService:Create(indicator, TweenInfo.new(0.2), {Size = UDim2.new(0, 3, 0, 16)}):Play()
+                    TweenService:Create(indicator, TweenInfo.new(0.2), {Size = UDim2.new(0, 3, 0, 14)}):Play()
                 end
             else
                 TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
@@ -280,13 +313,13 @@ function UI:CreateSidebar(Config)
 
     local function CreateNavButton(name, icon, order)
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, -20, 0, 34)
+        btn.Size = UDim2.new(1, -16, 0, 30)
         btn.BackgroundColor3 = accentColor
         btn.BackgroundTransparency = 1
         btn.Text = "   " .. icon .. "   " .. name
         btn.TextColor3 = textSecondary
         btn.Font = Enum.Font.Gotham
-        btn.TextSize = 12
+        btn.TextSize = 11
         btn.TextXAlignment = Enum.TextXAlignment.Left
         btn.LayoutOrder = order
         btn.AutoButtonColor = false
@@ -311,8 +344,8 @@ function UI:CreateSidebar(Config)
 
     local function CreateTab(name)
         local scroll = Instance.new("ScrollingFrame")
-        scroll.Size = UDim2.new(1, -24, 1, -12)
-        scroll.Position = UDim2.new(0, 12, 0, 0)
+        scroll.Size = UDim2.new(1, -20, 1, -10)
+        scroll.Position = UDim2.new(0, 10, 0, 0)
         scroll.BackgroundTransparency = 1
         scroll.BorderSizePixel = 0
         scroll.ScrollBarThickness = 2
@@ -322,7 +355,7 @@ function UI:CreateSidebar(Config)
         scroll.Parent = contentArea
 
         local layout = Instance.new("UIListLayout")
-        layout.Padding = UDim.new(0, 8)
+        layout.Padding = UDim.new(0, 6)
         layout.SortOrder = Enum.SortOrder.LayoutOrder
         layout.Parent = scroll
 
@@ -335,11 +368,11 @@ function UI:CreateSidebar(Config)
     -- ==========================================
     local function createSectionHeader(parent, text, order)
         local lbl = Instance.new("TextLabel")
-        lbl.Size = UDim2.new(1, 0, 0, 20)
+        lbl.Size = UDim2.new(1, 0, 0, 18)
         lbl.BackgroundTransparency = 1
         lbl.Text = string.upper(text)
         lbl.TextColor3 = accentColor
-        lbl.TextSize = 10
+        lbl.TextSize = 9
         lbl.Font = Enum.Font.GothamBold
         lbl.TextXAlignment = Enum.TextXAlignment.Left
         lbl.LayoutOrder = order
@@ -354,7 +387,7 @@ function UI:CreateSidebar(Config)
         card.BackgroundTransparency = cardTransparency
         card.LayoutOrder = order
         card.Parent = parent
-        Instance.new("UICorner", card).CornerRadius = UDim.new(0, 8)
+        Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
 
         local stroke = Instance.new("UIStroke", card)
         stroke.Color = Color3.fromRGB(255, 255, 255)
@@ -362,16 +395,16 @@ function UI:CreateSidebar(Config)
         stroke.Transparency = 0.92
 
         local layout = Instance.new("UIListLayout")
-        layout.Padding = UDim.new(0, 6)
+        layout.Padding = UDim.new(0, 5)
         layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         layout.SortOrder = Enum.SortOrder.LayoutOrder
         layout.Parent = card
 
         local padding = Instance.new("UIPadding")
-        padding.PaddingTop = UDim.new(0, 8)
-        padding.PaddingBottom = UDim.new(0, 8)
-        padding.PaddingLeft = UDim.new(0, 10)
-        padding.PaddingRight = UDim.new(0, 10)
+        padding.PaddingTop = UDim.new(0, 6)
+        padding.PaddingBottom = UDim.new(0, 6)
+        padding.PaddingLeft = UDim.new(0, 8)
+        padding.PaddingRight = UDim.new(0, 8)
         padding.Parent = card
 
         return card
@@ -381,7 +414,7 @@ function UI:CreateSidebar(Config)
         local initialVal = getConfig(settingKey, false)
 
         local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(1, 0, 0, 28)
+        frame.Size = UDim2.new(1, 0, 0, 24)
         frame.BackgroundTransparency = 1
         frame.LayoutOrder = order
         frame.Parent = card
@@ -391,14 +424,14 @@ function UI:CreateSidebar(Config)
         label.BackgroundTransparency = 1
         label.Text = labelText
         label.TextColor3 = textPrimary
-        label.TextSize = 12
+        label.TextSize = 11
         label.TextXAlignment = Enum.TextXAlignment.Left
         label.Font = Enum.Font.GothamSemibold
         label.Parent = frame
 
         local toggle = Instance.new("TextButton")
-        toggle.Size = UDim2.new(0, 40, 0, 20)
-        toggle.Position = UDim2.new(1, -40, 0.5, -10)
+        toggle.Size = UDim2.new(0, 36, 0, 18)
+        toggle.Position = UDim2.new(1, -36, 0.5, -9)
         toggle.BackgroundColor3 = initialVal and accentColor or Color3.fromRGB(35, 35, 45)
         toggle.Text = ""
         toggle.AutoButtonColor = false
@@ -406,8 +439,8 @@ function UI:CreateSidebar(Config)
         Instance.new("UICorner", toggle).CornerRadius = UDim.new(1, 0)
 
         local indicator = Instance.new("Frame")
-        indicator.Size = UDim2.new(0, 14, 0, 14)
-        indicator.Position = initialVal and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+        indicator.Size = UDim2.new(0, 12, 0, 12)
+        indicator.Position = initialVal and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
         indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         indicator.Parent = toggle
         Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
@@ -421,7 +454,7 @@ function UI:CreateSidebar(Config)
                 BackgroundColor3 = isActive and accentColor or Color3.fromRGB(35, 35, 45)
             }):Play()
             TweenService:Create(indicator, TweenInfo.new(0.2), {
-                Position = isActive and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+                Position = isActive and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
             }):Play()
         end)
     end
@@ -430,35 +463,35 @@ function UI:CreateSidebar(Config)
         local initialVal = getConfig(settingKey, minVal)
 
         local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(1, 0, 0, 38)
+        frame.Size = UDim2.new(1, 0, 0, 34)
         frame.BackgroundTransparency = 1
         frame.LayoutOrder = order
         frame.Parent = card
 
         local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(0.6, 0, 0, 16)
+        label.Size = UDim2.new(0.6, 0, 0, 14)
         label.BackgroundTransparency = 1
         label.Text = labelText
         label.TextColor3 = textPrimary
-        label.TextSize = 12
+        label.TextSize = 11
         label.TextXAlignment = Enum.TextXAlignment.Left
         label.Font = Enum.Font.GothamSemibold
         label.Parent = frame
 
         local valLabel = Instance.new("TextLabel")
-        valLabel.Size = UDim2.new(0.4, 0, 0, 16)
+        valLabel.Size = UDim2.new(0.4, 0, 0, 14)
         valLabel.Position = UDim2.new(0.6, 0, 0, 0)
         valLabel.BackgroundTransparency = 1
         valLabel.Text = tostring(initialVal)
         valLabel.TextColor3 = accentColor
-        valLabel.TextSize = 12
+        valLabel.TextSize = 11
         valLabel.TextXAlignment = Enum.TextXAlignment.Right
         valLabel.Font = Enum.Font.GothamBold
         valLabel.Parent = frame
 
         local sliderBtn = Instance.new("TextButton")
         sliderBtn.Size = UDim2.new(1, 0, 0, 5)
-        sliderBtn.Position = UDim2.new(0, 0, 0, 24)
+        sliderBtn.Position = UDim2.new(0, 0, 0, 20)
         sliderBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
         sliderBtn.Text = ""
         sliderBtn.AutoButtonColor = false
@@ -545,11 +578,11 @@ function UI:CreateSidebar(Config)
     createSectionHeader(tabSettings, "Configuration", 1)
     local settingsCard = createCard(tabSettings, 2)
     local aboutLbl = Instance.new("TextLabel")
-    aboutLbl.Size = UDim2.new(1, 0, 0, 50)
+    aboutLbl.Size = UDim2.new(1, 0, 0, 40)
     aboutLbl.BackgroundTransparency = 1
-    aboutLbl.Text = "H4xScripts - Modern Edition\nDev: @Mallo\nVersion: 2.0"
+    aboutLbl.Text = "H4xScripts - Compact Edition\nDev: @Mallo\nVersion: 2.0"
     aboutLbl.TextColor3 = textSecondary
-    aboutLbl.TextSize = 12
+    aboutLbl.TextSize = 11
     aboutLbl.Font = Enum.Font.Gotham
     aboutLbl.TextXAlignment = Enum.TextXAlignment.Left
     aboutLbl.Parent = settingsCard
