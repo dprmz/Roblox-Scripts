@@ -39,7 +39,7 @@ function UI:CreateSidebar(Config)
     mainWindow.Position = UDim2.new(0.5, -240, 0.5, -160)
     mainWindow.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     mainWindow.BorderSizePixel = 0
-    mainWindow.Visible = true -- Langsung tampil saat dieksekusi
+    mainWindow.Visible = true
     mainWindow.Parent = screenGui
 
     local windowCorner = Instance.new("UICorner")
@@ -56,7 +56,7 @@ function UI:CreateSidebar(Config)
         mainWindow.Visible = not mainWindow.Visible
     end)
 
-    -- Logika Dragging (Supaya menu bisa digeser)
+    -- Logika Dragging
     local dragging, dragInput, dragStart, startPos
     mainWindow.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -83,7 +83,7 @@ function UI:CreateSidebar(Config)
     end)
 
     -- ==========================================
-    -- 3. SIDEBAR & NAVIGATION
+    -- 3. SIDEBAR & NAVIGATION (FIXED POSITION)
     -- ==========================================
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 130, 1, 0)
@@ -95,7 +95,6 @@ function UI:CreateSidebar(Config)
     sidebarCorner.CornerRadius = UDim.new(0, 10)
     sidebarCorner.Parent = sidebar
 
-    -- Penutup sudut agar sisi kanan sidebar tetap lurus
     local sidebarFix = Instance.new("Frame")
     sidebarFix.Size = UDim2.new(0, 10, 1, 0)
     sidebarFix.Position = UDim2.new(1, -10, 0, 0)
@@ -105,6 +104,7 @@ function UI:CreateSidebar(Config)
 
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, 0, 0, 45)
+    title.Position = UDim2.new(0, 0, 0, 0)
     title.BackgroundTransparency = 1
     title.Text = " ☣ ADI"
     title.TextColor3 = Color3.fromRGB(255, 170, 0)
@@ -113,7 +113,7 @@ function UI:CreateSidebar(Config)
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = sidebar
 
-    -- Wadah tombol navigasi di sidebar
+    -- Wadah Navigasi yang ukurannya dikunci pas di bawah title sidebar
     local navContainer = Instance.new("Frame")
     navContainer.Size = UDim2.new(1, 0, 1, -50)
     navContainer.Position = UDim2.new(0, 0, 0, 50)
@@ -145,12 +145,10 @@ function UI:CreateSidebar(Config)
         for name, btn in pairs(navButtons) do
             local stroke = btn:FindFirstChildOfClass("UIStroke")
             if name == tabName then
-                -- State: Active (Menyala)
                 btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
                 btn.TextColor3 = Color3.fromRGB(255, 170, 0)
                 if stroke then stroke.Transparency = 0 end
             else
-                -- State: Inactive (Redup)
                 btn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
                 btn.TextColor3 = Color3.fromRGB(150, 150, 150)
                 if stroke then stroke.Transparency = 1 end
@@ -169,7 +167,7 @@ function UI:CreateSidebar(Config)
         btn.TextXAlignment = Enum.TextXAlignment.Left
         btn.LayoutOrder = order
         btn.AutoButtonColor = false
-        btn.Parent = navContainer
+        btn.Parent = navContainer -- Dimasukkan ke dalam navContainer yang posisinya aman
 
         local padding = Instance.new("UIPadding")
         padding.PaddingLeft = UDim.new(0, 12)
@@ -340,7 +338,7 @@ function UI:CreateSidebar(Config)
         Instance.new("UICorner", dropdown).CornerRadius = UDim.new(0, 4)
 
         dropdown.FocusLost:Connect(function()
-            val = dropdown.Text
+            local val = dropdown.Text
             local isValid = false
             for _, opt in ipairs(options) do
                 if val:lower() == opt:lower() then val = opt isValid = true break end
