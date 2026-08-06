@@ -7,16 +7,16 @@ local Player = game:GetService("Players").LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
--- ✅ SEMUA MODULE MENGGUNAKAN URL YANG SUDAH BENAR
 local BASE_URL = "https://raw.githubusercontent.com/dprmz/Roblox-Scripts/main/Modules/"
+local bypassCache = "?t=" .. tostring(tick())
 
 local Modules = {
-    Config = loadstring(game:HttpGet(BASE_URL .. "Config.lua"))(),
-    UI = loadstring(game:HttpGet(BASE_URL .. "UI.lua"))(),
-    Survivor = loadstring(game:HttpGet(BASE_URL .. "Survivor.lua"))(),
-    Killer = loadstring(game:HttpGet(BASE_URL .. "Killer.lua"))(),
-    ESP = loadstring(game:HttpGet(BASE_URL .. "ESP.lua"))(),
-    Visual = loadstring(game:HttpGet(BASE_URL .. "Visual.lua"))(),
+    Config = loadstring(game:HttpGet(BASE_URL .. "Config.lua" .. bypassCache))(),
+    UI = loadstring(game:HttpGet(BASE_URL .. "UI.lua" .. bypassCache))(),
+    Survivor = loadstring(game:HttpGet(BASE_URL .. "Survivor.lua" .. bypassCache))(),
+    Killer = loadstring(game:HttpGet(BASE_URL .. "Killer.lua" .. bypassCache))(),
+    ESP = loadstring(game:HttpGet(BASE_URL .. "ESP.lua" .. bypassCache))(),
+    Visual = loadstring(game:HttpGet(BASE_URL .. "Visual.lua" .. bypassCache))(),
 }
 
 -- Initialize Config (global settings)
@@ -33,9 +33,5 @@ Survivor:Init(Config, Player)
 
 local ESP = Modules.ESP
 ESP:Init(Config, Player)
-
--- Optional: Killer module (placeholder)
--- local Killer = Modules.Killer
--- Killer:Init(Config, Player)
 
 print("[ADI] Main script initialized. All systems go.")
