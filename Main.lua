@@ -1,32 +1,24 @@
--- ============================================================
--- MAIN.LUA – Violence District Full Script (ADI Project)
--- Modular design, Delta compatible & Safe Loader.
--- ============================================================
-
+-- Main.lua (Versi Terbaru)
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 
 local BASE_URL = "https://raw.githubusercontent.com/dprmz/Roblox-Scripts/main/Modules/"
 
--- Fungsi pintar untuk load module satu per satu (mencegah bug Delta)
 local function LoadModule(moduleName)
     local url = BASE_URL .. moduleName .. ".lua?t=" .. tostring(tick())
     
-    -- 1. Coba download file
     local success, code = pcall(function() return game:HttpGet(url) end)
-    if not success then
+    if not success or not code then
         warn("[ADI] Gagal mengunduh " .. moduleName .. ": " .. tostring(code))
         return nil
     end
 
-    -- 2. Coba compile kode (cek syntax error)
     local func, compileErr = loadstring(code)
     if not func then
         warn("[ADI] Error Sintaks di " .. moduleName .. ".lua: " .. tostring(compileErr))
         return nil
     end
 
-    -- 3. Coba jalankan module
     local runSuccess, moduleData = pcall(func)
     if not runSuccess then
         warn("[ADI] Error eksekusi di " .. moduleName .. ".lua: " .. tostring(moduleData))
@@ -36,40 +28,27 @@ local function LoadModule(moduleName)
     return moduleData
 end
 
-print("[ADI] Mulai memuat modul...")
+print("[ADI] Memuat modul...")
 
--- Load secara berurutan
 local Config = LoadModule("Config")
 local UI = LoadModule("UI")
 local Survivor = LoadModule("Survivor")
+local Killer = LoadModule("Killer")
 local ESP = LoadModule("ESP")
+local Visual = LoadModule("Visual")
 
--- Pengecekan krusial sebelum menjalankan script utama
-if not Config then
-    warn("[ADI] FATAL: Config gagal dimuat. Script dihentikan.")
-    return
-end
-if not UI then
-    warn("[ADI] FATAL: UI gagal dimuat. Cek error di atas. Script dihentikan.")
+if not Config or not UI then
+    warn("[ADI] Fatal error saat memuat UI/Config.")
     return
 end
 
--- Expose Config untuk debugging
 _G.ADIConfig = Config
 
--- Eksekusi fitur (Pastikan module Survivor dan ESP juga berhasil dimuat)
 UI:CreateSidebar(Config)
 
-if Survivor then
-    Survivor:Init(Config, Player)
-else
-    warn("[ADI] Module Survivor tidak ditemukan/error.")
-end
+if Survivor then Survivor:Init(Config, Player) end
+if Killer then Killer:Init(Config, Player) end
+if ESP then ESP:Init(Config, Player) end
+if Visual then Visual:Init(Config, Player) end
 
-if ESP then
-    ESP:Init(Config, Player)
-else
-    warn("[ADI] Module ESP tidak ditemukan/error.")
-end
-
-print("[ADI] Main script berhasil dieksekusi 100%. Semua sistem aktif.")
+print("[ADI] Script berhasil dimuat sempurna!")
