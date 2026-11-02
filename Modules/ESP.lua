@@ -7,13 +7,17 @@ local espObjects = {}
 
 local function clearESP()
     for _, obj in ipairs(espObjects) do
-        if obj and obj.Parent then obj:Destroy() end
+        if obj and obj.Parent then 
+            obj:Destroy() 
+        end
     end
     espObjects = {}
 end
 
 local function highlightModel(model, color)
     if not model or not model:IsA("Model") then return end
+    if model:FindFirstChildOfClass("Highlight") then return end -- Hindari duplikasi Highlight
+    
     local highlight = Instance.new("Highlight")
     highlight.FillColor = color
     highlight.OutlineColor = color
@@ -27,10 +31,10 @@ end
 function ESP:Init(Config, Player)
     local function updateESP()
         clearESP()
-        if not (Config.WallhackSurvivor or Config.WallhackKiller or Config.HookESP) then return end
+        if not (Config.WallhackS or Config.WallhackK or Config.HookESP) then return end
 
-        -- Wallhack Survivor (other survivors)
-        if Config.WallhackSurvivor then
+        -- Wallhack Survivor
+        if Config.WallhackS then
             for _, plr in ipairs(Players:GetPlayers()) do
                 if plr ~= Player and plr.Character and plr.Character:FindFirstChild("Humanoid") then
                     highlightModel(plr.Character, Color3.fromRGB(0, 255, 100))
@@ -39,16 +43,17 @@ function ESP:Init(Config, Player)
         end
 
         -- Wallhack Killer
-        if Config.WallhackKiller then
+        if Config.WallhackK then
             for _, plr in ipairs(Players:GetPlayers()) do
                 if plr ~= Player and plr.Character and plr.Character:FindFirstChild("Humanoid") then
                     local isKiller = false
-                    if plr.Team and plr.Team.Name == "Killers" then
+                    if plr.Team and (plr.Team.Name:lower():find("killer") or plr.Team.Name:lower():find("hunter")) then
                         isKiller = true
-                    elseif not isKiller then
+                    else
                         for _, tool in ipairs(plr.Character:GetChildren()) do
                             if tool:IsA("Tool") and tool:FindFirstChild("Handle") then
-                                isKiller = true; break
+                                isKiller = true
+                                break
                             end
                         end
                     end
@@ -70,26 +75,18 @@ function ESP:Init(Config, Player)
         end
     end
 
-    -- Update periodically and on events
     local timer = 0
     RunService.Heartbeat:Connect(function(dt)
         timer = timer + dt
-        if timer > 0.5 then
+        if timer > 1 then
             timer = 0
-            if Config.WallhackSurvivor or Config.WallhackKiller or Config.HookESP then
+            if Config.WallhackS or Config.WallhackK or Config.HookESP then
                 updateESP()
             else
                 clearESP()
             end
         end
     end)
-
-    -- Hook player changes
-    Players.PlayerAdded:Connect(updateESP)
-    Players.PlayerRemoving:Connect(updateESP)
-    for _, plr in ipairs(Players:GetPlayers()) do
-        plr.CharacterAdded:Connect(updateESP)
-    end
 
     print("[ESP] Initialized.")
 end
