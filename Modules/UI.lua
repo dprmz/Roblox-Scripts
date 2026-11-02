@@ -12,19 +12,15 @@ function UI:CreateSidebar(Config)
     screenGui.ResetOnSpawn = false
     screenGui.Parent = player:WaitForChild("PlayerGui")
 
-    -- ==========================================
-    -- Warna & Tema Glassmorphism (Hitam Transparan)
-    -- ==========================================
-    local accentColor = Color3.fromRGB(255, 55, 65)      -- Neon Crimson Red Accent
-    local bgMainColor = Color3.fromRGB(10, 10, 14)       -- Charcoal/Hitam Transparan
-    local bgCardColor = Color3.fromRGB(18, 18, 24)       -- Dark Card Background
+    local accentColor = Color3.fromRGB(255, 55, 65)
+    local bgMainColor = Color3.fromRGB(10, 10, 14)
+    local bgCardColor = Color3.fromRGB(18, 18, 24)
     local textPrimary = Color3.fromRGB(245, 245, 250)
     local textSecondary = Color3.fromRGB(150, 150, 165)
     
-    local mainTransparency = 0.25                       -- Tingkat Transparansi Background
+    local mainTransparency = 0.25
     local cardTransparency = 0.45
 
-    -- Helper Function Ambil Config Safe
     local function getConfig(key, default)
         if Config and Config[key] ~= nil then
             return Config[key]
@@ -32,9 +28,7 @@ function UI:CreateSidebar(Config)
         return default
     end
 
-    -- ==========================================
-    -- 1. FLOATING TOGGLE BUTTON (Draggable / Bebas Digeser)
-    -- ==========================================
+    -- Floating Toggle Button
     local toggleBtn = Instance.new("ImageButton")
     toggleBtn.Size = UDim2.new(0, 40, 0, 40)
     toggleBtn.Position = UDim2.new(0, 20, 0, 20)
@@ -50,7 +44,6 @@ function UI:CreateSidebar(Config)
     toggleStroke.Thickness = 1.5
     toggleStroke.Transparency = 0.3
 
-    -- System Dragging untuk Floating Button
     local toggleDragging, toggleDragStart, toggleStartPos
     local hasDragged = false
 
@@ -81,9 +74,7 @@ function UI:CreateSidebar(Config)
         end
     end)
 
-    -- ==========================================
-    -- 2. MAIN WINDOW (Ukuran Lebih Kecil/Compact)
-    -- ==========================================
+    -- Main Window
     local mainWindow = Instance.new("Frame")
     mainWindow.Size = UDim2.new(0, 520, 0, 320)
     mainWindow.Position = UDim2.new(0.5, -260, 0.5, -160)
@@ -101,16 +92,12 @@ function UI:CreateSidebar(Config)
     mainStroke.Thickness = 1
     mainStroke.Transparency = 0.85
 
-    -- Toggle Frame via Float Button (Hanya jika tidak sedang digeser)
     toggleBtn.MouseButton1Click:Connect(function()
         if not hasDragged then
             mainWindow.Visible = not mainWindow.Visible
         end
     end)
 
-    -- ==========================================
-    -- 3. DRAGGING SYSTEM MAIN WINDOW
-    -- ==========================================
     local dragging, dragInput, dragStart, startPos
     mainWindow.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -138,9 +125,7 @@ function UI:CreateSidebar(Config)
         end
     end)
 
-    -- ==========================================
-    -- 4. SIDEBAR NAVIGATION
-    -- ==========================================
+    -- Sidebar Area
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 150, 1, 0)
     sidebar.Position = UDim2.new(0, 0, 0, 0)
@@ -157,7 +142,6 @@ function UI:CreateSidebar(Config)
     sideDivider.BorderSizePixel = 0
     sideDivider.Parent = sidebar
 
-    -- Logo & Brand Header
     local brandFrame = Instance.new("Frame")
     brandFrame.Size = UDim2.new(1, 0, 0, 46)
     brandFrame.BackgroundTransparency = 1
@@ -186,7 +170,6 @@ function UI:CreateSidebar(Config)
     brandSub.TextXAlignment = Enum.TextXAlignment.Left
     brandSub.Parent = brandFrame
 
-    -- Navigation Container
     local navContainer = Instance.new("ScrollingFrame")
     navContainer.Size = UDim2.new(1, 0, 1, -92)
     navContainer.Position = UDim2.new(0, 0, 0, 48)
@@ -201,7 +184,7 @@ function UI:CreateSidebar(Config)
     navLayout.SortOrder = Enum.SortOrder.LayoutOrder
     navLayout.Parent = navContainer
 
-    -- User Info Card Bottom
+    -- Profile Info
     local userProfile = Instance.new("Frame")
     userProfile.Size = UDim2.new(1, -16, 0, 36)
     userProfile.Position = UDim2.new(0, 8, 1, -42)
@@ -214,7 +197,9 @@ function UI:CreateSidebar(Config)
     profileAvatar.Size = UDim2.new(0, 24, 0, 24)
     profileAvatar.Position = UDim2.new(0, 6, 0.5, -12)
     profileAvatar.BackgroundTransparency = 1
-    profileAvatar.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+    pcall(function()
+        profileAvatar.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+    end)
     profileAvatar.Parent = userProfile
     Instance.new("UICorner", profileAvatar).CornerRadius = UDim.new(1, 0)
 
@@ -240,9 +225,7 @@ function UI:CreateSidebar(Config)
     userSubLbl.TextXAlignment = Enum.TextXAlignment.Left
     userSubLbl.Parent = userProfile
 
-    -- ==========================================
-    -- 5. TOP BAR & CONTENT AREA
-    -- ==========================================
+    -- TopBar & Content Area
     local topBar = Instance.new("Frame")
     topBar.Size = UDim2.new(1, -150, 0, 38)
     topBar.Position = UDim2.new(0, 150, 0, 0)
@@ -282,7 +265,6 @@ function UI:CreateSidebar(Config)
     contentArea.BackgroundTransparency = 1
     contentArea.Parent = mainWindow
 
-    -- Navigasi Controller
     local tabs = {}
     local navButtons = {}
 
@@ -363,9 +345,6 @@ function UI:CreateSidebar(Config)
         return scroll
     end
 
-    -- ==========================================
-    -- 6. MODERN UI COMPONENT BUILDERS
-    -- ==========================================
     local function createSectionHeader(parent, text, order)
         local lbl = Instance.new("TextLabel")
         lbl.Size = UDim2.new(1, 0, 0, 18)
@@ -533,9 +512,7 @@ function UI:CreateSidebar(Config)
         end)
     end
 
-    -- ==========================================
-    -- 7. BUILD TABS & CONTENT
-    -- ==========================================
+    -- Tab Instantiation
     CreateNavButton("Survivor", "🏃", 1)
     CreateNavButton("Killer", "🔪", 2)
     CreateNavButton("Esp", "👁️", 3)
@@ -548,28 +525,30 @@ function UI:CreateSidebar(Config)
     local tabVisual = CreateTab("Visual")
     local tabSettings = CreateTab("Settings")
 
-    -- Tab Survivor
-    createSectionHeader(tabSurvivor, "Survivor Options", 1)
+    -- Tab Survivor Controls
+    createSectionHeader(tabSurvivor, "Survivor Movement & Utilities", 1)
     local survivorCard = createCard(tabSurvivor, 2)
-    createToggleInCard(survivorCard, "Anti-Fail Generator", "AntiFailGen", 1)
-    createToggleInCard(survivorCard, "Auto Perfect Skill Check", "AutoPerfect", 2)
-    createToggleInCard(survivorCard, "Auto Vault", "AutoVault", 3)
+    createToggleInCard(survivorCard, "Speed Hack", "SpeedEnabled", 1)
+    createSliderInCard(survivorCard, "Speed Value", "SpeedValue", 16, 100, 1, 2)
+    createToggleInCard(survivorCard, "Fast Vault / Auto Vault", "FastVault", 3)
+    createToggleInCard(survivorCard, "Auto Parry", "AutoParry", 4)
+    createSliderInCard(survivorCard, "Parry Radius", "ParryRadius", 5, 50, 1, 5)
 
-    -- Tab Killer
-    createSectionHeader(tabKiller, "Killer Options", 1)
+    -- Tab Killer Controls
+    createSectionHeader(tabKiller, "Killer Mechanics", 1)
     local killerCard = createCard(tabKiller, 2)
-    createToggleInCard(killerCard, "Auto Parry", "AutoParry", 1)
+    createToggleInCard(killerCard, "Auto Parry / Attack", "AutoParry", 1)
     createToggleInCard(killerCard, "No Recoil", "NoRecoil", 2)
-    createSliderInCard(killerCard, "Parry Range", "RangeValue", 5, 50, 1, 3)
+    createSliderInCard(killerCard, "Parry / Attack Range", "RangeValue", 5, 50, 1, 3)
 
-    -- Tab Esp
+    -- Tab Esp Controls
     createSectionHeader(tabEsp, "ESP Settings", 1)
     local espCard = createCard(tabEsp, 2)
     createToggleInCard(espCard, "Wallhack (Survivor)", "WallhackS", 1)
     createToggleInCard(espCard, "Wallhack (Killer)", "WallhackK", 2)
     createToggleInCard(espCard, "Hook ESP", "HookESP", 3)
 
-    -- Tab Visual
+    -- Tab Visual Controls
     createSectionHeader(tabVisual, "Visual Customization", 1)
     local visualCard = createCard(tabVisual, 2)
     createToggleInCard(visualCard, "Range Check Indicator", "RangeCheck", 1)
@@ -580,16 +559,13 @@ function UI:CreateSidebar(Config)
     local aboutLbl = Instance.new("TextLabel")
     aboutLbl.Size = UDim2.new(1, 0, 0, 40)
     aboutLbl.BackgroundTransparency = 1
-    aboutLbl.Text = "H4xScripts - Compact Edition\nDev: @Mallo\nVersion: 2.0"
+    aboutLbl.Text = "H4xScripts - Modern Edition\nDev: @ADI Project\nVersion: 2.1"
     aboutLbl.TextColor3 = textSecondary
     aboutLbl.TextSize = 11
     aboutLbl.Font = Enum.Font.Gotham
     aboutLbl.TextXAlignment = Enum.TextXAlignment.Left
     aboutLbl.Parent = settingsCard
 
-    -- ==========================================
-    -- 8. DEFAULT INITIALIZATION & KEYBIND
-    -- ==========================================
     SwitchTab("Survivor")
 
     UserInputService.InputBegan:Connect(function(input, processed)
