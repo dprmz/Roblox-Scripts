@@ -1,19 +1,26 @@
 -- Config.lua
 return {
-    -- Survivor
+    -- Survivor Settings
     SpeedEnabled = false,
     SpeedValue = 16,
     AutoAim = false,
-    AimPart = "Head",   -- "Head" or "Torso"
+    AimPart = "Head",       -- "Head" atau "Torso"
     AutoParry = false,
     ParryRadius = 15,
     FastVault = false,
+    AntiFailGen = false,
+    AutoPerfect = false,
+    AutoVault = false,
 
-    -- ESP
-    WallhackSurvivor = false,
-    WallhackKiller = false,
+    -- Killer Settings
+    NoRecoil = false,
+    RangeValue = 15,
+
+    -- ESP Settings
+    WallhackS = false,     -- Wallhack Survivor
+    WallhackK = false,     -- Wallhack Killer
     HookESP = false,
 
-    -- Visual (future)
-    -- ...
+    -- Visual Settings
+    RangeCheck = false
 }
